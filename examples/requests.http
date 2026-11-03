@@ -1,0 +1,31 @@
+### 完整描述：预期 READY，仍需人工确认
+POST http://localhost:8081/api/v1/ticket-drafts
+Content-Type: application/json
+
+{
+  "description": "我使用 RuoYi-Vue 3.8.9，在系统管理的字典管理里，给同一个字典类型添加两条数据，字典值相同、标签不同，两次都提示成功。现在下拉框里有两个选项，希望重复添加时提示字典值已经存在。"
+}
+
+### 信息不足：预期 NEEDS_INFO，不猜测系统和版本
+POST http://localhost:8081/api/v1/ticket-drafts
+Content-Type: application/json
+
+{
+  "description": "昨天下午开始导出失败，提示超时，重新登录也没用。"
+}
+
+### 无关输入：预期 UNSUPPORTED，draft 为 null
+POST http://localhost:8081/api/v1/ticket-drafts
+Content-Type: application/json
+
+{
+  "description": "帮我写一首关于秋天的诗。"
+}
+
+### 空描述：预期 400，不调用模型
+POST http://localhost:8081/api/v1/ticket-drafts
+Content-Type: application/json
+
+{
+  "description": " "
+}

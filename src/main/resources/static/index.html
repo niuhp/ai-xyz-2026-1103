@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI 工单草稿 · ai-xyz-2026-1103</title>
+    <link rel="stylesheet" href="/app.css">
+    <script src="/app.js" defer></script>
+</head>
+<body>
+<main>
+    <header>
+        <span class="badge">JAVA × AI · 实战 01</span>
+        <h1>把问题描述，变成工单草稿</h1>
+        <p>写下遇到的问题，AI 整理字段，Java 校验完整性，你来确认事实。</p>
+        <small>ai-xyz-2026-1103 · JDK 25 / Spring Boot 4.0.8</small>
+    </header>
+    <section class="panel">
+        <form id="draft-form">
+            <label for="description">问题描述</label>
+            <textarea id="description" maxlength="4000" rows="7" required
+                      placeholder="例如：哪个系统、哪个模块、实际发生了什么、希望怎样、使用哪个版本……"></textarea>
+            <div class="examples" aria-label="示例描述">
+                <button type="button" data-example="complete">完整描述</button>
+                <button type="button" data-example="missing">信息不足</button>
+                <button type="button" data-example="unrelated">无关输入</button>
+            </div>
+            <div class="actions">
+                <span>请使用公开或脱敏的内容。提交后会发送至配置的模型平台。</span>
+                <button id="submit-button" type="submit">生成草稿</button>
+            </div>
+        </form>
+    </section>
+    <section id="result" class="panel" aria-live="polite" hidden>
+        <h2 id="result-title">生成结果</h2>
+        <p id="result-message"></p>
+        <dl id="draft-fields"></dl>
+        <p id="result-meta" class="meta"></p>
+        <details>
+            <summary>查看接口 JSON</summary>
+            <pre id="result-json"></pre>
+        </details>
+    </section>
+    <footer>本演示只生成草稿，不会自动创建工单。AI 提取的事实和分类需要人工核对。</footer>
+</main>
+</body>
+</html>

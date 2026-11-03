@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: ai-xyz-2026-1103
+  config:
+    import: optional:file:./.env.local[.properties]
+  ai:
+    model:
+      chat: openai
+      embedding: none
+      image: none
+      moderation: none
+      audio:
+        speech: none
+        transcription: none
+    openai:
+      # Spring AI 2 使用完整 API 基础地址，包含 /v1；不是旧版的 completions-path 拼接方式。
+      base-url: ${FASTAI_BASE_URL:https://www.fastaitoken.com/v1}
+      api-key: ${FASTAI_API_KEY:}
+      timeout: 45s
+      max-retries: 0
+      chat:
+        model: ${FASTAI_MODEL:deepseek-v4.1-flash}
+server:
+  address: 127.0.0.1
+  port: ${SERVER_PORT:8081}
+  shutdown: graceful
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+app:
+  ticket:
+    platform-name: ai-xyz-2026-1103
+    max-concurrent-requests: 2
+logging:
+  level:
+    com.niuhaipeng.aixyz: INFO
+    org.springframework.ai.chat.model.MessageAggregator: "OFF"
