@@ -38,5 +38,5 @@ app:
     max-concurrent-requests: 2
 logging:
   level:
-    com.niuhaipeng.aixyz: INFO
+    com.niuhp.aixyz: INFO
     org.springframework.ai.chat.model.MessageAggregator: "OFF"

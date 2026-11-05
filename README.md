@@ -154,7 +154,7 @@ flowchart LR
 主要源码：
 
 ```text
-src/main/java/com/niuhaipeng/aixyz/
+src/main/java/com/niuhp/aixyz/
 ├── AiXyzApplication.java
 ├── api/                  # Controller、请求/响应 DTO、请求编号、异常处理
 ├── config/               # 模型参数及提示词加载
