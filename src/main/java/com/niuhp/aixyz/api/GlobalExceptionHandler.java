@@ -63,6 +63,7 @@ public class GlobalExceptionHandler {
         body.setRequestId((String)request.getAttribute(RequestIdFilter.REQUEST_ID_ATTRIBUTE));
         body.setCode(error.name());
         body.setMessage(error.getMessage());
+        body.setAction(error.getAction());
         LOGGER.warn("ticket_draft_failed requestId={} code={}", body.getRequestId(), body.getCode());
         return ResponseEntity.status(error.getHttpStatus()).body(body);
     }

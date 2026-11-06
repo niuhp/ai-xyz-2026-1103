@@ -30,6 +30,8 @@ chmod 600 .env.local
 | `FASTAI_MODEL` | `deepseek-v4.1-flash` |
 | `FASTAI_API_KEY` | 在本地文件或环境变量中设置，无默认密钥 |
 | `SERVER_PORT` | `8081` |
+| `MODEL_TIMEOUT` | `15s`，单次 SDK 调用超时，不是整个接口总时限 |
+| `MODEL_MAX_RETRIES` | `1`，仅允许 0 或 1 次额外重试 |
 
 Spring AI 2 使用完整 API 基础地址，因此这里包含 `/v1`，实际请求为 `POST /v1/chat/completions`。不要再拼接第二个 `/v1`。
 
@@ -64,8 +66,8 @@ curl -sS http://localhost:8081/api/v1/ticket-drafts \
 草稿状态为 `READY` 或 `NEEDS_INFO` 时可编辑字段。`draftId` 用于确认接口：
 
 ```bash
-curl -sS http://localhost:8081/api/v1/ticket-drafts/confirm \\
-  -H 'Content-Type: application/json' \\
+curl -sS http://localhost:8081/api/v1/ticket-drafts/confirm \
+  -H 'Content-Type: application/json' \
   -d '{"draftId":"上一步返回的草稿编号","draft":{"system":"RuoYi-Vue","module":"字典管理","category":"DATA_DUPLICATION","summary":"重复字典值","actualResult":"重复值添加成功","expectedResult":"提示已存在","occurredAtText":"","version":"3.8.9"}}'
 ```
 
@@ -124,7 +126,8 @@ Java 根据 **系统名称、功能模块、实际现象、预期结果、系统
 {
   "requestId": "服务端生成的请求编号",
   "code": "INVALID_MODEL_OUTPUT",
-  "message": "模型返回内容不符合工单结构，请调整描述后重试"
+  "message": "模型返回内容不符合工单结构，请调整描述后重试",
+  "action": "请检查输入；仍有问题时提供请求编号给维护者。"
 }
 ```
 
@@ -133,7 +136,12 @@ Java 根据 **系统名称、功能模块、实际现象、预期结果、系统
 | 400 | `INVALID_REQUEST` | 空白、超长或非法请求 JSON |
 | 404 / 405 / 415 | `NOT_FOUND / METHOD_NOT_ALLOWED / UNSUPPORTED_MEDIA_TYPE` | 路径、方法、内容类型错误 |
 | 502 | `INVALID_MODEL_OUTPUT` | 非法 JSON、未知字段或枚举、字段约束不满足、输出被截断 |
-| 502 | `MODEL_UNAVAILABLE` | 供应商鉴权失败、限流或服务错误等 |
+| 502 | `MODEL_UNAVAILABLE` | 上游服务故障，符合策略时已尝试一次重试 |
+| 502 | `MODEL_AUTH_ERROR` | 上游 401/403，维护者检查密钥与权限 |
+| 502 | `MODEL_QUOTA_EXHAUSTED` | 上游 402 或明确的额度不足错误码 |
+| 503 | `MODEL_RATE_LIMITED` | 上游 429，且没有命中已知额度错误码 |
+| 502 | `MODEL_REQUEST_REJECTED` | 上游 400/404/422，检查请求、模型和接口配置 |
+| 502 | `MODEL_NETWORK_ERROR` | 网络调用失败，结果不确定，不自动重试 |
 | 503 | `BUSY` | 本地已有两个模型请求在处理 |
 | 504 | `MODEL_TIMEOUT` | 模型网络响应超时 |
 | 500 | `INTERNAL_ERROR` | 其他未预期错误 |
@@ -157,7 +165,7 @@ flowchart LR
 - 使用 JSON Object 输出模式，配合提示词中的 JSON Schema；供应商不强制执行业务规则，服务端仍必须解析、校验。
 - 只接受正常结束的响应；即使返回的文本看似合法 JSON，完成原因为 length 也会拒绝。
 - 严格拒绝未知 JSON 字段、枚举错误、多余尾部文本和标量类型强制转换。
-- 请求超时默认 45 秒，SDK 自动重试为 0；避免不易察觉的重复请求。手动重试仍可能产生额外计费。
+- 单次 SDK 调用超时默认 15 秒，SDK 自动重试为 0；由应用集中控制是否额外调用，详见下节。
 - 同时最多处理两个模型请求，满额立即返回 503，不无限排队。
 - 无工具调用、无自动外部操作；提示词中的隔离规则可降低指令干扰，但不能保证模型完全不会编造。
 
@@ -177,13 +185,42 @@ src/main/resources/
 └── static/               # 原生 HTML/CSS/JS 演示页面
 ```
 
+## 第三篇：模型故障兜底
+
+`ModelFailureClassifier` 负责分类，`ModelCallExecutor` 集中控制调用次数，`GlobalExceptionHandler` 返回稳定的 `code / message / action / requestId`。上表 HTTP 是本应用状态，不等于上游状态；上游密钥错误不会被当成当前用户登录失效。
+
+- SDK 重试为 0，同时把 HTTP 请求体标为不可隐式重放，阻止传输层对 `503 + Retry-After: 0` 等情况额外发送 POST。
+- **只对上游 HTTP 502/503 最多重试一次**，一次逻辑请求最多两次模型调用。其他 5xx 不自动重试。
+- 无 `Retry-After` 时随机等待 250～500 毫秒；若该头存在，兼容秒数和 HTTP 日期，并至少等待其指定时间。无效、已过期或要求等待超过 2 秒时，本次不重试。
+- 超时、未知网络错误、429、鉴权、额度、参数错误和非法输出均不自动重试。429 先识别已知额度错误码，供应商错误结构有差异，应按接入文档扩展。
+- 默认 15 秒是**单次 SDK 调用超时**，额外调用会增加总耗时；这里没有实现端到端总时限、熔断或跨实例限流。
+- 超时不等于上游没有执行，也不保证停止生成或计费。手动重试和自动重试都可能产生额外费用，以供应商账单为准。
+- 重试只包住模型调用，JSON/业务校验和工单落库不在重试范围。模型失败时保留网页中的输入，不生成替代内容，不进入工单创建。
+- 应用日志记录请求编号、尝试序号、结果码、耗时和重试等待，不记录密钥、用户描述或供应商报错原文。
+
+### 不花模型额度的本地故障演示
+
+需要 Python 3（仅标准库）：
+
+```bash
+./scripts/run-demo.sh
+```
+
+打开 [http://localhost:8082/?demo=1](http://localhost:8082/?demo=1)，选择超时、限流、鉴权失败、额度不足、503 后恢复或持续不可用等场景，再点“生成草稿”。终端显示每次模拟上游调用的序号，可核对实际尝试次数。
+
+脚本显式使用 `demo` 配置、本机模拟地址和占位 Key，并禁用 `.env.local` 导入，不向真实供应商转发请求；数据库为独立内存库，端口默认 8082 / 18083。页面的故障选项只在 demo 配置下启用。终端按 **Ctrl+C** 同时停止应用和模拟服务，不影响另外运行的 8081。
+
+IDEA 中正常使用：Project SDK、运行配置 JRE、Maven Runner JRE 均选 **25**；工作目录为项目根目录，运行 `AiXyzApplication`。正常调用会读取 `.env.local`，默认访问 8081。
+
+如需在 IDEA 调试故障演示，先在终端运行 `python3 scripts/mock-model.py --port 18083`；运行配置的 Program arguments 填 `--spring.profiles.active=demo --spring.config.import=`，工作目录仍为项目根目录。访问 8082 的 `?demo=1` 页面，结束后分别停止 IDEA 应用和 Python 模拟服务。
+
 ## 测试与阿里规范检查
 
 ```bash
 mvn clean verify
 ```
 
-测试通过本地假 OpenAI HTTP 服务验证真实 Spring AI 请求格式、三个业务状态、输入限制、非法/截断输出、上游限流脱敏和零重试；另有并发额度释放、异常关联结构和超时映射测试。自动化测试使用测试占位 Key，不访问真实供应商，不消耗模型额度。
+测试通过本地假 OpenAI HTTP 服务验证真实 Spring AI 请求格式、三个业务状态、输入限制、非法/截断输出、上游错误分类与脱敏、有界重试和真实 HTTP 超时；另有并发额度释放、异常关联结构和超时映射测试。自动化测试使用测试占位 Key，不访问真实供应商，不消耗模型额度。
 
 `verify` 同时运行 Alibaba P3C PMD 检查，包含测试源码。报告在 `target/pmd.xml`。
 
@@ -206,6 +243,6 @@ P3C 2.1.1 基于 PMD 6，因此解析语法设为 Java 17；源码采用其可�
 
 ## 使用边界
 
-当前是本地教学示例，监听 `127.0.0.1`，无登录认证、持久化和工单提交。部署共享服务前应加入身份认证、用户额度、请求大小限制、审计和费用控制，并确认数据可以发送给所用模型供应商。
+当前是本地教学示例，监听 `127.0.0.1`，已具备 H2 草稿持久化、人工确认与本地工单创建，但没有登录认证和外部工单系统集成。部署共享服务前应加入身份认证、用户额度、请求大小限制、审计和费用控制，并确认数据可以发送给所用模型供应商。
 
 密钥只放入环境变量或 Git 忽略的 `.env.local`，不要写入 Java、HTTP 示例、截图或日志。本机配置文件权限设为 600。默认日志只记录请求编号、状态、耗时或安全错误码，不记录原始描述和上游报错。

@@ -1,0 +1,14 @@
+# 配合 scripts/run-demo.sh 的本地模拟上游使用，不读取真实密钥。
+spring:
+  ai:
+    openai:
+      base-url: http://127.0.0.1:${DEMO_UPSTREAM_PORT:18083}/v1
+      api-key: local-demo-placeholder
+      timeout: 1s
+  datasource:
+    url: jdbc:h2:mem:failuredemo;DB_CLOSE_DELAY=-1
+server:
+  port: 8082
+app:
+  ticket:
+    model-max-retries: 1

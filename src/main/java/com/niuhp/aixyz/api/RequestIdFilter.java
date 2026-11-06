@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
+import org.slf4j.MDC;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -26,6 +27,8 @@ public class RequestIdFilter extends OncePerRequestFilter {
         String requestId = UUID.randomUUID().toString();
         request.setAttribute(REQUEST_ID_ATTRIBUTE, requestId);
         response.setHeader("X-Request-ID", requestId);
-        filterChain.doFilter(request, response);
+        try (MDC.MDCCloseable ignored = MDC.putCloseable("requestId", requestId)) {
+            filterChain.doFilter(request, response);
+        }
     }
 }

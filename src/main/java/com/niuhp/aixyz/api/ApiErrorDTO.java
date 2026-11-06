@@ -17,6 +17,17 @@ public class ApiErrorDTO {
     /** 可公开的错误说明。 */
     private String message;
 
+    /** 可执行的处理建议。 */
+    private String action;
+
+    public String getAction() {
+        return action;
+    }
+
+    public void setAction(String action) {
+        this.action = action;
+    }
+
     public String getRequestId() {
         return requestId;
     }

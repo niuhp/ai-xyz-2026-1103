@@ -24,7 +24,7 @@ spring:
       # Spring AI 2 使用完整 API 基础地址，包含 /v1；不是旧版的 completions-path 拼接方式。
       base-url: ${FASTAI_BASE_URL:https://www.fastaitoken.com/v1}
       api-key: ${FASTAI_API_KEY:}
-      timeout: 45s
+      timeout: ${MODEL_TIMEOUT:15s}
       max-retries: 0
       chat:
         model: ${FASTAI_MODEL:deepseek-v4.1-flash}
@@ -44,6 +44,7 @@ app:
   ticket:
     platform-name: ai-xyz-2026-1103
     max-concurrent-requests: 2
+    model-max-retries: ${MODEL_MAX_RETRIES:1}
 logging:
   level:
     com.niuhp.aixyz: INFO

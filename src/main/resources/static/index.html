@@ -10,12 +10,26 @@
 <body>
 <main>
     <header>
-        <span class="badge">JAVA × AI · 实战 02</span>
-        <h1>核对草稿，再创建工单</h1>
-        <p>AI 负责整理信息，Java 负责校验和保存，提交前由你确认每个字段。</p>
+        <span class="badge">JAVA × AI · 实战 03</span>
+        <h1>模型出错，也要说清楚</h1>
+        <p>先生成草稿，再人工确认。超时、限流或配置异常时，保留输入并给出处理建议。</p>
         <small>ai-xyz-2026-1103 · JDK 25 / Spring Boot 4.0.8</small>
     </header>
     <section class="panel">
+        <div id="demo-controls" hidden>
+            <strong>本地故障演示 · 不调用真实模型</strong>
+            <label for="demo-scenario">模拟场景</label>
+            <select id="demo-scenario">
+                <option value="success">正常返回</option>
+                <option value="timeout">响应超时（不自动重试）</option>
+                <option value="rate_limit">429 请求受限（不自动重试）</option>
+                <option value="auth">401 密钥错误（不自动重试）</option>
+                <option value="quota">429 配额不足（不自动重试）</option>
+                <option value="recover">503 后恢复（共调用两次）</option>
+                <option value="unavailable">持续 503（两次后停止）</option>
+                <option value="retry_after">503 要求等待 10 秒（本次不重试）</option>
+            </select>
+        </div>
         <form id="draft-form">
             <label for="description">问题描述</label>
             <textarea id="description" maxlength="4000" rows="7" required
@@ -34,6 +48,7 @@
     <section id="result" class="panel" aria-live="polite" hidden>
         <h2 id="result-title">生成结果</h2>
         <p id="result-message"></p>
+        <p id="result-action" hidden></p>
         <div id="draft-fields" class="draft-fields"></div>
         <button id="confirm-button" type="button" hidden>确认并创建工单</button>
         <p id="ticket-success" role="status" hidden></p>

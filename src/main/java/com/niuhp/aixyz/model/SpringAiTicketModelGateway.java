@@ -3,9 +3,6 @@ package com.niuhp.aixyz.model;
 import com.niuhp.aixyz.api.TokenUsageDTO;
 import com.niuhp.aixyz.service.ProcessingError;
 import com.niuhp.aixyz.service.TicketProcessingException;
-import com.openai.errors.OpenAIException;
-import java.net.SocketTimeoutException;
-import java.net.http.HttpTimeoutException;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -36,7 +33,11 @@ public class SpringAiTicketModelGateway implements TicketModelGateway {
     /** 严格读取整个 JSON，拒绝多余内容和未知字段。 */
     private final JsonMapper jsonMapper;
 
-    public SpringAiTicketModelGateway(ChatClient ticketChatClient, String ticketSystemPrompt, JsonMapper jsonMapper) {
+    private final ModelCallExecutor modelCallExecutor;
+
+    public SpringAiTicketModelGateway(ChatClient ticketChatClient, String ticketSystemPrompt, JsonMapper jsonMapper,
+            ModelCallExecutor modelCallExecutor) {
+        this.modelCallExecutor = modelCallExecutor;
         this.chatClient = ticketChatClient;
         this.jsonMapper = jsonMapper;
         this.systemPrompt = ticketSystemPrompt + "\n输出结构（JSON Schema）：\n"
@@ -45,16 +46,10 @@ public class SpringAiTicketModelGateway implements TicketModelGateway {
 
     @Override
     public ExtractionResult extract(String description) {
-        ChatResponse response;
-        try {
-            // 使用消息对象直接传递原文，避免描述中的花括号被模板引擎解释。
-            response = chatClient.prompt()
-                    .messages(new SystemMessage(systemPrompt), new UserMessage(description))
-                    .call().chatResponse();
-        } catch (OpenAIException exception) {
-            throw new TicketProcessingException(isTimeout(exception)
-                    ? ProcessingError.MODEL_TIMEOUT : ProcessingError.MODEL_UNAVAILABLE);
-        }
+        // 只对模型生成阶段使用重试，工单写入不经过这层。
+        ChatResponse response = modelCallExecutor.call(() -> chatClient.prompt()
+                .messages(new SystemMessage(systemPrompt), new UserMessage(description))
+                .call().chatResponse());
         if (response == null || response.getResult() == null) {
             throw new TicketProcessingException(ProcessingError.INVALID_MODEL_OUTPUT);
         } else {
@@ -89,14 +84,4 @@ public class SpringAiTicketModelGateway implements TicketModelGateway {
         return result;
     }
 
-    private boolean isTimeout(Throwable throwable) {
-        Throwable current = throwable;
-        while (current != null) {
-            if (current instanceof SocketTimeoutException || current instanceof HttpTimeoutException) {
-                return true;
-            }
-            current = current.getCause();
-        }
-        return false;
-    }
 }

@@ -3,6 +3,12 @@ package com.niuhp.aixyz;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import com.niuhp.aixyz.domain.IssueCategory;
+import com.niuhp.aixyz.model.ModelCallExecutor;
+import com.niuhp.aixyz.model.ModelFailureClassifier;
+import com.niuhp.aixyz.model.SpringAiTicketModelGateway;
+import com.niuhp.aixyz.service.TicketProcessingException;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
@@ -27,6 +33,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 通过本地假模型验证真实 HTTP、Spring AI 协议和校验链路，不消耗真实额度。
@@ -35,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.config.import=", "spring.ai.openai.api-key=test-key",
-                "spring.ai.openai.timeout=5s", "spring.datasource.url=jdbc:h2:mem:tickettest;DB_CLOSE_DELAY=-1"})
+                "spring.ai.openai.timeout=1s", "spring.datasource.url=jdbc:h2:mem:tickettest;DB_CLOSE_DELAY=-1"})
 class TicketDraftIntegrationTest {
 
     private static final String INVALID_CATEGORY = "UNKNOWN";
@@ -55,6 +62,11 @@ class TicketDraftIntegrationTest {
     /** 下一次模型 HTTP 状态。 */
     private static final AtomicInteger NEXT_STATUS = new AtomicInteger(200);
 
+    private static final AtomicInteger RECOVER_AFTER = new AtomicInteger();
+    private static final AtomicInteger DELAY_MILLIS = new AtomicInteger();
+    private static final AtomicReference<String> ERROR_CODE = new AtomicReference<>("rate_limit_exceeded");
+    private static final AtomicReference<String> RETRY_AFTER = new AtomicReference<>();
+
     /** 上游请求计数。 */
     private static final AtomicInteger CALL_COUNT = new AtomicInteger();
 
@@ -70,6 +82,10 @@ class TicketDraftIntegrationTest {
     /** 本地应用随机端口。 */
     @LocalServerPort
     private int port;
+
+    /** 与正式应用相同的 Spring AI 客户端。 */
+    @Autowired
+    private ChatClient chatClient;
 
     /** 真实 HTTP 客户端。 */
     private final HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
@@ -88,6 +104,10 @@ class TicketDraftIntegrationTest {
     @BeforeEach
     void resetUpstream() {
         NEXT_STATUS.set(200);
+        RECOVER_AFTER.set(0);
+        DELAY_MILLIS.set(0);
+        ERROR_CODE.set("rate_limit_exceeded");
+        RETRY_AFTER.set(null);
         FINISH_REASON.set("stop");
         NEXT_CONTENT.set(completeExtraction());
         LAST_REQUEST.set(null);
@@ -195,10 +215,100 @@ class TicketDraftIntegrationTest {
     void shouldRedactProviderFailureAndAvoidAutomaticRetry() throws Exception {
         NEXT_STATUS.set(429);
         HttpResponse<String> response = post(Map.of("description", "字典值重复了"));
-        assertThat(response.statusCode()).isEqualTo(502);
-        assertThat(JSON.readTree(response.body()).path("code").asString()).isEqualTo("MODEL_UNAVAILABLE");
+        assertThat(response.statusCode()).isEqualTo(503);
+        assertThat(JSON.readTree(response.body()).path("code").asString()).isEqualTo("MODEL_RATE_LIMITED");
         assertThat(response.body()).doesNotContain("sensitive-provider-detail", "test-key");
         assertThat(CALL_COUNT.get()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldDistinguishAuthQuotaAndRequestFailuresWithoutRetry() throws Exception {
+        int[] statuses = {401, 403, 402, 429, 404};
+        String[] errors = {"MODEL_AUTH_ERROR", "MODEL_AUTH_ERROR", "MODEL_QUOTA_EXHAUSTED",
+            "MODEL_QUOTA_EXHAUSTED", "MODEL_REQUEST_REJECTED"};
+        for (int i = 0; i < statuses.length; i++) {
+            NEXT_STATUS.set(statuses[i]);
+            ERROR_CODE.set(statuses[i] == 429 ? "insufficient_quota" : "provider_error");
+            CALL_COUNT.set(0);
+            HttpResponse<String> response = post(Map.of("description", "测试描述"));
+            JsonNode body = JSON.readTree(response.body());
+            assertThat(body.path("code").asString()).isEqualTo(errors[i]);
+            assertThat(body.path("action").asString()).contains("维护者");
+            assertThat(body.path("requestId").asString())
+                    .isEqualTo(response.headers().firstValue("X-Request-ID").orElseThrow());
+            assertThat(response.body()).doesNotContain("sensitive-provider-detail", "test-key");
+            assertThat(CALL_COUNT.get()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void shouldRetryTransientFailureOnceAndRecover() throws Exception {
+        NEXT_STATUS.set(503);
+        RECOVER_AFTER.set(1);
+        assertThat(post(Map.of("description", "测试描述")).statusCode()).isEqualTo(200);
+        assertThat(CALL_COUNT.get()).isEqualTo(2);
+    }
+
+    @Test
+    void shouldStopAfterTwoAttemptsOnPersistentFailure() throws Exception {
+        NEXT_STATUS.set(502);
+        HttpResponse<String> response = post(Map.of("description", "测试描述"));
+        assertThat(JSON.readTree(response.body()).path("code").asString()).isEqualTo("MODEL_UNAVAILABLE");
+        assertThat(CALL_COUNT.get()).isEqualTo(2);
+    }
+
+    @Test
+    void shouldNotRetryWhenProviderRequestsLongWait() throws Exception {
+        NEXT_STATUS.set(503);
+        RETRY_AFTER.set("10");
+        post(Map.of("description", "测试描述"));
+        assertThat(CALL_COUNT.get()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldDisableTransportReplayWhenApplicationRetryIsOff() {
+        NEXT_STATUS.set(503);
+        RETRY_AFTER.set("0");
+        RECOVER_AFTER.set(1);
+        SpringAiTicketModelGateway gateway = new SpringAiTicketModelGateway(chatClient, "extract", JSON,
+                new ModelCallExecutor(new ModelFailureClassifier(), 0));
+        assertThatThrownBy(() -> gateway.extract("测试描述"))
+                .isInstanceOf(TicketProcessingException.class);
+        assertThat(CALL_COUNT.get()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldRetryWithZeroRetryAfterAndRejectInvalidHeader() throws Exception {
+        NEXT_STATUS.set(503);
+        RECOVER_AFTER.set(1);
+        RETRY_AFTER.set("0");
+        assertThat(post(Map.of("description", "测试描述")).statusCode()).isEqualTo(200);
+        assertThat(CALL_COUNT.get()).isEqualTo(2);
+        for (String header : new String[]{"invalid", "-1", "3", "999999999999999999999"}) {
+            CALL_COUNT.set(0);
+            RETRY_AFTER.set(header);
+            HttpResponse<String> response = post(Map.of("description", "测试描述"));
+            assertThat(JSON.readTree(response.body()).path("code").asString()).isEqualTo("MODEL_UNAVAILABLE");
+            assertThat(CALL_COUNT.get()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void shouldNotRetryOtherServerErrors() throws Exception {
+        NEXT_STATUS.set(500);
+        post(Map.of("description", "测试描述"));
+        assertThat(CALL_COUNT.get()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldTimeoutWithoutRetryAndReleaseConcurrencyPermit() throws Exception {
+        DELAY_MILLIS.set(2000);
+        HttpResponse<String> response = post(Map.of("description", "测试描述"));
+        assertThat(response.statusCode()).isEqualTo(504);
+        assertThat(JSON.readTree(response.body()).path("code").asString()).isEqualTo("MODEL_TIMEOUT");
+        assertThat(CALL_COUNT.get()).isEqualTo(1);
+        DELAY_MILLIS.set(0);
+        assertThat(post(Map.of("description", "恢复后描述")).statusCode()).isEqualTo(200);
     }
 
     @Test
@@ -231,6 +341,7 @@ class TicketDraftIntegrationTest {
         try {
             HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
             server.createContext("/", TicketDraftIntegrationTest::respond);
+            server.setExecutor(java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor());
             server.start();
             return server;
         } catch (IOException exception) {
@@ -240,12 +351,22 @@ class TicketDraftIntegrationTest {
 
     private static void respond(HttpExchange exchange) throws IOException {
         try (exchange) {
-            CALL_COUNT.incrementAndGet();
+            int attempt = CALL_COUNT.incrementAndGet();
+            int status = RECOVER_AFTER.get() > 0 && attempt > RECOVER_AFTER.get() ? 200 : NEXT_STATUS.get();
+            int delay = DELAY_MILLIS.get();
+            if (delay > 0) {
+                try {
+                    Thread.sleep(delay);
+                } catch (InterruptedException exception) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            }
             LAST_PATH.set(exchange.getRequestURI().getPath());
             LAST_AUTHORIZATION.set(exchange.getRequestHeaders().getFirst("Authorization"));
             LAST_REQUEST.set(JSON.readTree(exchange.getRequestBody().readAllBytes()));
             String body;
-            if (NEXT_STATUS.get() == HttpStatus.OK.value()) {
+            if (status == HttpStatus.OK.value()) {
                 body = JSON.writeValueAsString(Map.of(
                         "id", "chatcmpl-test", "object", "chat.completion", "created", 1,
                         "model", "deepseek-v4.1-flash",
@@ -253,11 +374,15 @@ class TicketDraftIntegrationTest {
                                 "message", Map.of("role", "assistant", "content", NEXT_CONTENT.get()))},
                         "usage", Map.of("prompt_tokens", 100, "completion_tokens", 50, "total_tokens", 150)));
             } else {
-                body = "{\"error\":{\"message\":\"sensitive-provider-detail\",\"type\":\"rate_limit\"}}";
+                body = JSON.writeValueAsString(Map.of("error", Map.of("message", "sensitive-provider-detail",
+                        "type", ERROR_CODE.get(), "code", ERROR_CODE.get())));
             }
             byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().set("Content-Type", "application/json");
-            exchange.sendResponseHeaders(NEXT_STATUS.get(), bytes.length);
+            if (RETRY_AFTER.get() != null) {
+                exchange.getResponseHeaders().set("Retry-After", RETRY_AFTER.get());
+            }
+            exchange.sendResponseHeaders(status, bytes.length);
             exchange.getResponseBody().write(bytes);
         }
     }

@@ -24,9 +24,19 @@ public enum ProcessingError {
     /** 并发已达本地限制。 */
     BUSY(HttpStatus.SERVICE_UNAVAILABLE, "当前请求较多，请稍后重试"),
     /** 上游模型调用失败。 */
-    MODEL_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "模型服务暂不可用，请稍后重试或检查服务配置"),
+    MODEL_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "模型服务暂不可用，本次未生成草稿"),
+    /** 鉴权或模型访问权限错误，不自动重试。 */
+    MODEL_AUTH_ERROR(HttpStatus.BAD_GATEWAY, "模型服务鉴权失败，请联系维护者检查密钥与权限"),
+    /** 明确的余额或配额不足。 */
+    MODEL_QUOTA_EXHAUSTED(HttpStatus.BAD_GATEWAY, "模型服务额度不足，请联系维护者检查账户额度"),
+    /** 429 无法一概推断为余额不足。 */
+    MODEL_RATE_LIMITED(HttpStatus.SERVICE_UNAVAILABLE, "模型服务请求受限，请稍后再试"),
+    /** 参数、模型名称或路由不受支持。 */
+    MODEL_REQUEST_REJECTED(HttpStatus.BAD_GATEWAY, "模型请求被拒绝，请联系维护者检查模型与接口配置"),
+    /** 网络结果不确定，避免自动重复生成。 */
+    MODEL_NETWORK_ERROR(HttpStatus.BAD_GATEWAY, "连接模型服务失败，本次未取得有效草稿"),
     /** 上游超时。 */
-    MODEL_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "模型响应超时，请稍后重试"),
+    MODEL_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "等待模型响应超时，本次未取得有效草稿"),
     /** 上游返回不完整或无法通过校验的内容。 */
     INVALID_MODEL_OUTPUT(HttpStatus.BAD_GATEWAY, "模型返回内容不符合工单结构，请调整描述后重试"),
     /** 未预期的服务错误。 */
@@ -41,6 +51,24 @@ public enum ProcessingError {
     ProcessingError(HttpStatus httpStatus, String message) {
         this.httpStatus = httpStatus;
         this.message = message;
+    }
+
+    public String getAction() {
+        switch (this) {
+            case MODEL_AUTH_ERROR:
+            case MODEL_QUOTA_EXHAUSTED:
+            case MODEL_REQUEST_REJECTED:
+                return "请联系维护者处理配置或额度问题，反复点击不会解决。";
+            case MODEL_TIMEOUT:
+            case MODEL_NETWORK_ERROR:
+                return "原始描述已保留。稍后可手动重试；上游可能已处理请求，费用以平台账单为准。";
+            case MODEL_RATE_LIMITED:
+            case MODEL_UNAVAILABLE:
+            case BUSY:
+                return "请稍后再试，避免连续点击；重复调用可能产生额外费用。";
+            default:
+                return "请检查输入；仍有问题时提供请求编号给维护者。";
+        }
     }
 
     public HttpStatus getHttpStatus() {

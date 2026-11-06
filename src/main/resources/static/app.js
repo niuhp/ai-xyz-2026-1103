@@ -16,6 +16,17 @@ const description = document.querySelector("#description");
 const submitButton = document.querySelector("#submit-button");
 const confirmButton = document.querySelector("#confirm-button");
 let activeDraftId = null;
+let demoEnabled = false;
+if (new URLSearchParams(location.search).get("demo") === "1") {
+    fetch("/api/v1/demo").then(response => response.ok ? response.json() : null).then(config => {
+        demoEnabled = config?.enabled === true;
+        document.querySelector("#demo-controls").hidden = !demoEnabled;
+        if (demoEnabled) {
+            description.value = examples.complete;
+            document.querySelector(".actions span").textContent = "演示数据仅发送到本机模拟服务，不消耗模型额度。";
+        }
+    }).catch(() => { demoEnabled = false; });
+}
 
 document.querySelectorAll("[data-example]").forEach(button => {
     button.addEventListener("click", () => {
@@ -39,7 +50,9 @@ document.querySelector("#draft-form").addEventListener("submit", async event => 
     try {
         const response = await fetch("/api/v1/ticket-drafts", {
             method: "POST", headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({description: text})
+            body: JSON.stringify({description: demoEnabled
+                ? "[demo:" + document.querySelector("#demo-scenario").value + ":" + crypto.randomUUID() + "] " + text
+                : text})
         });
         const result = await response.json();
         renderResult(result, response.ok);
@@ -81,6 +94,9 @@ function renderResult(result, ok) {
     document.querySelector("#result").hidden = false;
     const title = document.querySelector("#result-title");
     const message = document.querySelector("#result-message");
+    const action = document.querySelector("#result-action");
+    action.hidden = ok || !result.action;
+    action.textContent = ok ? "" : result.action || "";
     const fields = document.querySelector("#draft-fields");
     fields.replaceChildren();
     activeDraftId = result.draftId || null;
@@ -123,6 +139,6 @@ function renderResult(result, ok) {
     const usage = result.usage && result.usage.totalTokens != null
         ? " · " + result.usage.totalTokens + " Token（上游报告，非费用账单）" : "";
     document.querySelector("#result-meta").textContent = (result.requestId ? "请求编号 " + result.requestId : "")
-        + (ok ? " · " + result.elapsedMillis + " ms" + usage : "");
+        + (ok ? " · " + result.elapsedMillis + " ms" + usage : result.code ? " · " + result.code : "");
     document.querySelector("#result-json").textContent = JSON.stringify(result, null, 2);
 }
