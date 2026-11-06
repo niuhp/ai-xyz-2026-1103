@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.config.import=", "spring.ai.openai.api-key=test-key",
-                "spring.ai.openai.timeout=5s"})
+                "spring.ai.openai.timeout=5s", "spring.datasource.url=jdbc:h2:mem:tickettest;DB_CLOSE_DELAY=-1"})
 class TicketDraftIntegrationTest {
 
     private static final String INVALID_CATEGORY = "UNKNOWN";
@@ -116,6 +116,32 @@ class TicketDraftIntegrationTest {
     }
 
     @Test
+    void shouldCreateConfirmedTicketOnceForRepeatedConfirmation() throws Exception {
+        JsonNode generated = JSON.readTree(post(Map.of("description", "完整工单描述")).body());
+        assertThat(generated.path("draftId").isString()).isTrue();
+        Map<String, Object> confirmation = Map.of("draftId", generated.path("draftId").asString(),
+                "draft", generated.path("draft"));
+        HttpResponse<String> first = post("/api/v1/ticket-drafts/confirm", confirmation);
+        HttpResponse<String> repeated = post("/api/v1/ticket-drafts/confirm", confirmation);
+        assertThat(first.statusCode()).isEqualTo(201);
+        assertThat(JSON.readTree(first.body()).path("status").asString()).isEqualTo("CREATED");
+        assertThat(JSON.readTree(repeated.body()).path("ticketId").asString())
+                .isEqualTo(JSON.readTree(first.body()).path("ticketId").asString());
+    }
+
+    @Test
+    void shouldRejectConfirmationWithMissingRequiredFields() throws Exception {
+        JsonNode generated = JSON.readTree(post(Map.of("description", "完整工单描述")).body());
+        Map<String, Object> invalidDraft = Map.of("system", "", "module", "",
+                "category", "DATA_DUPLICATION", "summary", "有效摘要", "actualResult", "",
+                "expectedResult", "", "occurredAtText", "", "version", "");
+        HttpResponse<String> response = post("/api/v1/ticket-drafts/confirm",
+                Map.of("draftId", generated.path("draftId").asString(), "draft", invalidDraft));
+        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(JSON.readTree(response.body()).path("code").asString()).isEqualTo("DRAFT_INCOMPLETE");
+    }
+
+    @Test
     void shouldCalculateMissingFieldsOnServerAndKeepRelativeTime() throws Exception {
         NEXT_CONTENT.set("""
                 {"relevant":true,"draft":{"system":"","module":"导出","category":"EXPORT",
@@ -188,8 +214,12 @@ class TicketDraftIntegrationTest {
     }
 
     private HttpResponse<String> post(Map<String, ?> input) throws Exception {
+        return post("/api/v1/ticket-drafts", input);
+    }
+
+    private HttpResponse<String> post(String path, Map<String, ?> input) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/ticket-drafts"))
+                .uri(URI.create("http://127.0.0.1:" + port + path))
                 .timeout(Duration.ofSeconds(15))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(JSON.writeValueAsString(input)))

@@ -1,8 +1,8 @@
 # ai-xyz-2026-1103
 
-一个可直接运行的 Java AI 实战：**把用户的问题描述整理成工单草稿**。
+一个可直接运行的 Java AI 实战：**把用户的问题描述整理成工单草稿，人工确认后再创建工单**。
 
-技术栈：JDK **25**、Spring Boot **4.0.8**、Spring AI **2.0.1**。默认使用 FastAI 的 `deepseek-v4.1-flash`，提供 REST API 和无需安装前端工具的演示页面，无数据库依赖。
+技术栈：JDK **25**、Spring Boot **4.0.8**、Spring AI **2.0.1**。默认使用 FastAI 的 `deepseek-v4.1-flash`，提供 REST API 和无需安装前端工具的演示页面；H2 文件数据库保存草稿与本地演示工单。
 
 ## 快速运行
 
@@ -60,6 +60,16 @@ curl -sS http://localhost:8081/api/v1/ticket-drafts \
 ```
 
 接口请求只有一个字段 `description`：不能为空、不能全为空白，最多 4000 个 Java 字符。更多示例见 [examples/requests.http](examples/requests.http)。
+
+草稿状态为 `READY` 或 `NEEDS_INFO` 时可编辑字段。`draftId` 用于确认接口：
+
+```bash
+curl -sS http://localhost:8081/api/v1/ticket-drafts/confirm \\
+  -H 'Content-Type: application/json' \\
+  -d '{"draftId":"上一步返回的草稿编号","draft":{"system":"RuoYi-Vue","module":"字典管理","category":"DATA_DUPLICATION","summary":"重复字典值","actualResult":"重复值添加成功","expectedResult":"提示已存在","occurredAtText":"","version":"3.8.9"}}'
+```
+
+接口成功返回 `ticketId` 和 `CREATED`。同一个草稿编号重复提交会返回原工单编号，工单表上的唯一约束也会阻止重复创建。数据位于 `.local/ticketdb`，只用于本地演示。
 
 响应示意（摘要及措辞可能因模型输出不同而变化）：
 

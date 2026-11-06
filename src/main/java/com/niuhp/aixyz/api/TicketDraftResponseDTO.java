@@ -14,6 +14,9 @@ public class TicketDraftResponseDTO {
     /** 本次应用请求编号。 */
     private String requestId;
 
+    /** 供确认创建时引用的草稿编号。 */
+    private String draftId;
+
     /** 由服务端计算的完整性状态。 */
     private DraftStatus status;
 
@@ -34,6 +37,14 @@ public class TicketDraftResponseDTO {
 
     public String getRequestId() {
         return requestId;
+    }
+
+    public String getDraftId() {
+        return draftId;
+    }
+
+    public void setDraftId(String draftId) {
+        this.draftId = draftId;
     }
 
     public void setRequestId(String requestId) {

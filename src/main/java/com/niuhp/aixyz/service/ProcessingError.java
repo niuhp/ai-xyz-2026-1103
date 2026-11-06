@@ -13,6 +13,10 @@ public enum ProcessingError {
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "请填写 1 至 4000 字的问题描述，检查 JSON 格式和字段类型"),
     /** 请求资源不存在。 */
     NOT_FOUND(HttpStatus.NOT_FOUND, "请求的资源不存在"),
+    /** 无法找到待确认的草稿。 */
+    DRAFT_NOT_FOUND(HttpStatus.NOT_FOUND, "草稿不存在或已过期，请重新生成"),
+    /** 确认内容缺少必要字段。 */
+    DRAFT_INCOMPLETE(HttpStatus.BAD_REQUEST, "请补全系统、模块、分类、摘要、实际现象、预期结果和版本信息"),
     /** 请求方法不支持。 */
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "该接口不支持此请求方法"),
     /** 请求内容类型不支持。 */

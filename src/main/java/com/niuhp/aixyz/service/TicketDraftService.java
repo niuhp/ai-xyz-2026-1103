@@ -1,22 +1,28 @@
 package com.niuhp.aixyz.service;
 
 import com.niuhp.aixyz.api.TicketDraftResponseDTO;
+import com.niuhp.aixyz.api.TicketCreatedDTO;
+import com.niuhp.aixyz.api.CreateTicketRequestDTO;
 import com.niuhp.aixyz.domain.DraftStatus;
 import com.niuhp.aixyz.domain.TicketDraftDTO;
 import com.niuhp.aixyz.model.ExtractionResult;
 import com.niuhp.aixyz.model.ModelExtractionDTO;
 import com.niuhp.aixyz.model.TicketModelGateway;
+import com.niuhp.aixyz.repository.TicketRepository;
 import jakarta.validation.Validator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * 校验模型输出并计算缺失项；不创建真实工单。
@@ -34,14 +40,21 @@ public class TicketDraftService {
     /** Bean Validation 校验器。 */
     private final Validator validator;
 
+    private final TicketRepository ticketRepository;
+
+    private final JsonMapper jsonMapper;
+
     /** 保护本地演示服务的并发额度。 */
     private final Semaphore permits;
 
-    public TicketDraftService(TicketModelGateway modelGateway, Validator validator,
+    public TicketDraftService(TicketModelGateway modelGateway, Validator validator, TicketRepository ticketRepository,
+            JsonMapper jsonMapper,
             @Value("${app.ticket.max-concurrent-requests:2}") int maxConcurrentRequests) {
         Assert.isTrue(maxConcurrentRequests > 0, "最大并发数必须大于零");
         this.modelGateway = modelGateway;
         this.validator = validator;
+        this.ticketRepository = ticketRepository;
+        this.jsonMapper = jsonMapper;
         this.permits = new Semaphore(maxConcurrentRequests);
     }
 
@@ -54,6 +67,15 @@ public class TicketDraftService {
             ExtractionResult result = modelGateway.extract(description);
             validate(result);
             TicketDraftResponseDTO response = toResponse(result, requestId);
+            if (response.getDraft() != null) {
+                String draftId = UUID.randomUUID().toString();
+                response.setDraftId(draftId);
+                try {
+                    ticketRepository.saveDraft(draftId, jsonMapper.writeValueAsString(response.getDraft()));
+                } catch (JacksonException exception) {
+                    throw new TicketProcessingException(ProcessingError.INTERNAL_ERROR);
+                }
+            }
             response.setElapsedMillis(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt));
             LOGGER.info("ticket_draft requestId={} status={} elapsedMillis={}",
                     requestId, response.getStatus(), response.getElapsedMillis());
@@ -61,6 +83,17 @@ public class TicketDraftService {
         } finally {
             permits.release();
         }
+    }
+
+    public TicketCreatedDTO create(CreateTicketRequestDTO request) {
+        TicketDraftDTO draft = request.getDraft();
+        if (!validator.validate(draft).isEmpty() || !StringUtils.hasText(draft.getSystem())
+                || !StringUtils.hasText(draft.getModule()) || !StringUtils.hasText(draft.getActualResult())
+                || !StringUtils.hasText(draft.getExpectedResult()) || !StringUtils.hasText(draft.getVersion())) {
+            throw new TicketProcessingException(ProcessingError.DRAFT_INCOMPLETE);
+        }
+        String ticketId = ticketRepository.createConfirmed(request.getDraftId(), draft);
+        return new TicketCreatedDTO(ticketId, "CREATED");
     }
 
     private void validate(ExtractionResult result) {
@@ -72,7 +105,7 @@ public class TicketDraftService {
             throw new TicketProcessingException(ProcessingError.INVALID_MODEL_OUTPUT);
         }
         boolean relevant = Boolean.TRUE.equals(extraction.getRelevant());
-        if (relevant != (extraction.getDraft() != null)) {
+        if (relevant == (extraction.getDraft() == null)) {
             throw new TicketProcessingException(ProcessingError.INVALID_MODEL_OUTPUT);
         }
     }

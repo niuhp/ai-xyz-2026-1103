@@ -20,11 +20,15 @@ button:disabled { cursor: wait; opacity: .6; }
 #submit-button { color: white; background: #245bd3; border: 0; padding: 12px 22px; white-space: nowrap; }
 h2 { font-size: 20px; margin: 0 0 12px; }
 #result-message { line-height: 1.8; color: #526176; }
-dl { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 12px 18px; line-height: 1.8; }
-dt { color: #748197; font-size: 14px; }
-dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.draft-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 20px 0; }
+.draft-fields label { margin: 0; color: #526176; font-size: 13px; }
+.draft-fields input, .draft-fields textarea, .draft-fields select { display: block; width: 100%; margin-top: 6px; padding: 10px; border: 1px solid #ccd6e5; border-radius: 6px; font: inherit; color: #18283d; }
+.draft-fields textarea { min-height: 78px; resize: vertical; }
+#confirm-button { background: #18794e; color: white; border-color: #18794e; padding: 11px 18px; }
+#confirm-button:disabled { opacity: .55; cursor: wait; }
+#ticket-success { padding: 14px; background: #edf8f1; color: #18794e; }
 details { border-top: 1px solid #edf0f5; padding-top: 16px; margin-top: 20px; color: #526176; font-size: 13px; }
 summary { cursor: pointer; }
 pre { background: #f5f7fb; padding: 16px; border-radius: 8px; overflow: auto; max-height: 420px; }
 footer { font-size: 12px; line-height: 1.8; color: #748197; text-align: center; }
-@media (max-width: 600px) { main { padding: 30px 16px; } .panel { padding: 20px; } .actions { align-items: flex-start; flex-direction: column; } dl { grid-template-columns: 76px minmax(0, 1fr); gap: 12px; } }
+@media (max-width: 600px) { main { padding: 30px 16px; } .panel { padding: 20px; } .actions { align-items: flex-start; flex-direction: column; } .draft-fields { grid-template-columns: 1fr; } }
