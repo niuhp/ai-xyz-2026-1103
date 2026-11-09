@@ -2,6 +2,9 @@ package com.niuhp.aixyz.config;
 
 import java.nio.charset.StandardCharsets;
 import java.io.IOException;
+import java.time.Duration;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Primary;
 import okhttp3.Request;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.chat.client.ChatClient;
@@ -36,17 +39,28 @@ public class AiConfiguration {
     }
 
     @Bean
+    @Primary
     public ChatClient ticketChatClient(ChatClient.Builder builder, OpenAiCommonProperties commonProperties,
             OpenAiChatProperties chatProperties) {
-        OpenAiChatOptions.Builder options = OpenAiChatOptions.builder()
+        return builder.defaultOptions(options(chatProperties,
+                OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties, chatProperties).getTimeout()))
+                .build();
+    }
+
+    @Bean
+    public ChatClient ticketStreamChatClient(ChatClient.Builder builder, OpenAiChatProperties chatProperties,
+            @Value("${app.ticket.stream-timeout:45s}") Duration timeout) {
+        return builder.defaultOptions(options(chatProperties, timeout).streamUsage(true)).build();
+    }
+
+    private OpenAiChatOptions.Builder options(OpenAiChatProperties chatProperties, Duration timeout) {
+        return OpenAiChatOptions.builder()
                 .model(chatProperties.getModel())
                 .temperature(0.0)
                 .maxCompletionTokens(2048)
                 .maxRetries(0)
-                .timeout(OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties, chatProperties)
-                        .getTimeout())
+                .timeout(timeout)
                 .responseFormat(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build());
-        return builder.defaultOptions(options).build();
     }
 
     @Bean

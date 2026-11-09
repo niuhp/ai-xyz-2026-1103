@@ -12,3 +12,4 @@ server:
 app:
   ticket:
     model-max-retries: 1
+    stream-timeout: 12s

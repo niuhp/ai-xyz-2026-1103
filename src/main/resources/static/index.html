@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>AI 工单草稿 · ai-xyz-2026-1103</title>
     <link rel="stylesheet" href="/app.css">
-    <script src="/app.js" defer></script>
+    <script src="/app.js" type="module"></script>
 </head>
 <body>
 <main>
     <header>
-        <span class="badge">JAVA × AI · 实战 03</span>
-        <h1>模型出错，也要说清楚</h1>
-        <p>先生成草稿，再人工确认。超时、限流或配置异常时，保留输入并给出处理建议。</p>
+        <span class="badge">JAVA × AI · 实战 04</span>
+        <h1>边生成，边看见</h1>
+        <p>SSE 让等待过程可见。片段只供预览，完整校验后才进入人工确认。</p>
         <small>ai-xyz-2026-1103 · JDK 25 / Spring Boot 4.0.8</small>
     </header>
     <section class="panel">
@@ -20,17 +20,23 @@
             <strong>本地故障演示 · 不调用真实模型</strong>
             <label for="demo-scenario">模拟场景</label>
             <select id="demo-scenario">
-                <option value="success">正常返回</option>
-                <option value="timeout">响应超时（不自动重试）</option>
+                <option value="success">正常返回（流式逐段输出）</option>
+                <option value="disconnect">片段后中断（不形成草稿）</option>
+                <option value="missing_finish">无正常结束标记</option>
+                <option value="invalid">完整输出但 JSON 非法</option>
+                <option value="truncated">被截断（length）</option>
+                <option value="timeout">响应超时（流式总时限 12 秒）</option>
                 <option value="rate_limit">429 请求受限（不自动重试）</option>
                 <option value="auth">401 密钥错误（不自动重试）</option>
                 <option value="quota">429 配额不足（不自动重试）</option>
-                <option value="recover">503 后恢复（共调用两次）</option>
-                <option value="unavailable">持续 503（两次后停止）</option>
+                <option value="recover">503 后恢复（普通模式重试，流式不重试）</option>
+                <option value="unavailable">持续 503（普通模式两次，流式一次）</option>
                 <option value="retry_after">503 要求等待 10 秒（本次不重试）</option>
             </select>
         </div>
         <form id="draft-form">
+            <label for="generation-mode">生成方式</label>
+            <select id="generation-mode"><option value="stream">流式生成 · 逐段预览</option><option value="normal">普通生成 · 等待完整结果</option></select>
             <label for="description">问题描述</label>
             <textarea id="description" maxlength="4000" rows="7" required
                       placeholder="例如：哪个系统、哪个模块、实际发生了什么、希望怎样、使用哪个版本……"></textarea>
@@ -41,9 +47,16 @@
             </div>
             <div class="actions">
                 <span>请使用公开或脱敏的内容。提交后会发送至配置的模型平台。</span>
+                <button id="cancel-button" type="button" hidden>停止等待</button>
                 <button id="submit-button" type="submit">生成草稿</button>
             </div>
         </form>
+    </section>
+    <section id="stream-panel" class="panel" hidden>
+        <h2>生成过程</h2>
+        <p id="stream-status" role="status"></p>
+        <p id="stream-timing" class="meta"></p>
+        <details id="stream-preview"><summary>模型原始输出 · 未校验，仅供预览</summary><pre id="stream-text"></pre></details>
     </section>
     <section id="result" class="panel" aria-live="polite" hidden>
         <h2 id="result-title">生成结果</h2>

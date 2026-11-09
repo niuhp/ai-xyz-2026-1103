@@ -28,7 +28,7 @@ class Handler(BaseHTTPRequestHandler):
             attempt = COUNTS[request]
         status, code, retry_after = 200, '', None
         if scenario == 'timeout':
-            time.sleep(2.5)
+            time.sleep(15 if payload.get('stream') else 2.5)
         elif scenario == 'rate_limit':
             status, code = 429, 'rate_limit_exceeded'
         elif scenario == 'auth':
@@ -41,6 +41,9 @@ class Handler(BaseHTTPRequestHandler):
             status, code, retry_after = 503, 'service_unavailable', '10'
         print(json.dumps({'scenario': scenario, 'request': request, 'attempt': attempt,
                           'status': status}), flush=True)
+        if status == 200 and payload.get('stream'):
+            self.stream(payload, scenario)
+            return
         if status == 200:
             body = {'id': 'chatcmpl-local-demo', 'object': 'chat.completion', 'created': 1,
                     'model': 'local-fault-simulator',
@@ -61,6 +64,52 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(data)
         except (BrokenPipeError, ConnectionResetError):
             pass
+
+    def stream(self, payload, scenario):
+        """Send real upstream chunks; the browser does not fake a typing effect."""
+        content = payload.get('messages', [{}])[-1].get('content', '')
+        draft = DRAFT
+        if '昨天下午开始导出失败' in content:
+            draft = {'relevant': True, 'draft': dict(DRAFT['draft'], system='', module='导出',
+                category='EXPORT', summary='导出超时', actualResult='导出失败，提示超时',
+                expectedResult='', occurredAtText='昨天下午', version='')}
+        elif '写一首' in content:
+            draft = {'relevant': False, 'draft': None}
+        text = json.dumps(draft, ensure_ascii=False)
+        if scenario == 'invalid':
+            text = '模型没有返回 JSON'
+        try:
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/event-stream')
+            self.send_header('Cache-Control', 'no-cache')
+            self.end_headers()
+            time.sleep(0.5)
+            for offset in range(0, len(text), 18):
+                self.chunk({'content': text[offset:offset + 18]})
+                if scenario == 'disconnect' and offset >= 36:
+                    self.close_connection = True
+                    return
+                time.sleep(0.16)
+            if scenario != 'missing_finish':
+                self.chunk({}, 'length' if scenario == 'truncated' else 'stop')
+                self.write_event({'id': 'chatcmpl-local-demo', 'object': 'chat.completion.chunk',
+                    'created': 1, 'model': 'local-fault-simulator', 'choices': [],
+                    'usage': {'prompt_tokens': 0, 'completion_tokens': 0, 'total_tokens': 0}})
+            self.wfile.write(b'data: [DONE]\n\n')
+            self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+        finally:
+            self.close_connection = True
+
+    def chunk(self, delta, reason=None):
+        self.write_event({'id': 'chatcmpl-local-demo', 'object': 'chat.completion.chunk',
+            'created': 1, 'model': 'local-fault-simulator',
+            'choices': [{'index': 0, 'delta': delta, 'finish_reason': reason}]})
+
+    def write_event(self, event):
+        self.wfile.write(('data: ' + json.dumps(event, ensure_ascii=False) + '\n\n').encode())
+        self.wfile.flush()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

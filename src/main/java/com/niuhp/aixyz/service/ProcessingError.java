@@ -39,6 +39,8 @@ public enum ProcessingError {
     MODEL_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "等待模型响应超时，本次未取得有效草稿"),
     /** 上游返回不完整或无法通过校验的内容。 */
     INVALID_MODEL_OUTPUT(HttpStatus.BAD_GATEWAY, "模型返回内容不符合工单结构，请调整描述后重试"),
+    /** 流结束但缺少模型正常完成标记。 */
+    STREAM_INCOMPLETE(HttpStatus.BAD_GATEWAY, "模型响应中断，预览内容未形成有效草稿"),
     /** 未预期的服务错误。 */
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "处理失败，请使用请求编号联系维护者");
 
@@ -61,6 +63,7 @@ public enum ProcessingError {
                 return "请联系维护者处理配置或额度问题，反复点击不会解决。";
             case MODEL_TIMEOUT:
             case MODEL_NETWORK_ERROR:
+            case STREAM_INCOMPLETE:
                 return "原始描述已保留。稍后可手动重试；上游可能已处理请求，费用以平台账单为准。";
             case MODEL_RATE_LIMITED:
             case MODEL_UNAVAILABLE:

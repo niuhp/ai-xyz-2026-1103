@@ -246,3 +246,47 @@ P3C 2.1.1 基于 PMD 6，因此解析语法设为 Java 17；源码采用其可�
 当前是本地教学示例，监听 `127.0.0.1`，已具备 H2 草稿持久化、人工确认与本地工单创建，但没有登录认证和外部工单系统集成。部署共享服务前应加入身份认证、用户额度、请求大小限制、审计和费用控制，并确认数据可以发送给所用模型供应商。
 
 密钥只放入环境变量或 Git 忽略的 `.env.local`，不要写入 Java、HTTP 示例、截图或日志。本机配置文件权限设为 600。默认日志只记录请求编号、状态、耗时或安全错误码，不记录原始描述和上游报错。
+
+## 第四篇：SSE 流式生成（版本标签 1109）
+
+页面默认流式生成，也可切回普通生成对照。新接口是 `POST /api/v1/ticket-drafts/stream`，请求仍为同一个 `description`；响应为 `text/event-stream`。浏览器用 `fetch + ReadableStream` 接收 POST 结果，不使用会自动重连的 EventSource。
+
+```bash
+curl -N http://localhost:8081/api/v1/ticket-drafts/stream \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: text/event-stream, application/json' \
+  -d '{"description":"RuoYi-Vue 3.8.9 字典管理添加重复值成功，希望提示已存在。"}'
+```
+
+| SSE 事件 | 内容与处理 |
+| --- | --- |
+| `status` | accepted / generating / validating，反映实际处理阶段，没有虚构百分比 |
+| `delta` | 模型原始 JSON 的片段，只能预览，不能提交为工单 |
+| `heartbeat` | 两秒一次，维持活动并帮助发现断开；不是模型输出，也不保证中间代理不缓冲 |
+| `result` | 模型正常 stop、严格 JSON 解析和 Bean Validation 通过后的完整处理结果；可能为 READY / NEEDS_INFO / UNSUPPORTED |
+| `failure` | 安全的 code / message / action / requestId；本次没有可用结果 |
+
+空白输入、格式错误或并发满额在 SSE 开始前返回普通 HTTP JSON 错误。一旦响应已开始，后续模型错误通过 `failure` 事件表达，HTTP 200 不代表生成成功。浏览器只有收到 `result` 才展示可审核的草稿；没有终态就 EOF 属于中断，残帧也不会当成成功。
+
+- 普通接口沿用第三篇有限重试；**流式接口全程不自动重试**，包括首片段之前的 503。SDK 重试及传输层隐式 POST 重放仍关闭。
+- `STREAM_TIMEOUT=45s` 是流式连接的本地总等待预算（demo 为 12 秒），从本次流处理开始计算，同时给流式 SDK 设置相同超时；普通接口的 `MODEL_TIMEOUT=15s` 不变。总时限不是模型速度承诺，发送和数据库操作也不是硬实时系统。
+- `TicketDraftStreamService` 使用有界线程池、共享并发信号量和独立心跳/截止时间调度器；`StreamWorkerTask` 保证提交前取消、执行器拒绝及运行退出只释放一次额度，运行中取消须等任务真正退出后释放。
+- `DraftStreamSession` 串行化发送、保存与关闭。观察到连接关闭后不再保存；若保存完成后网络才断开，客户端可能收不到已保存草稿。预览上限为 32000 个 Java 字符，超限失败。
+- 停止等待通过 AbortController 关闭客户端请求；服务端借助发送失败、连接回调或总时限尽力取消本地订阅、释放资源。网络断开可能需要心跳才能察觉，无法承诺供应商立即停止生成或计费。
+- 新增专用流式 ChatClient，与普通客户端复用模型、JSON 输出和零 SDK 重试配置，只调整流式超时及用量报告选项。用量可能缺失，未知时为 null，不按字符数猜费用。
+- `sse.mjs` 增量解码 UTF-8，按空行分帧，支持本接口 LF/CRLF 和多行 data；不会假设一次网络 read 就是一条事件。模型片段通过 textContent 展示，避免当 HTML 执行。
+
+生产环境经过 Nginx、网关或 CDN 时，还需核对缓冲、压缩、读取超时和连接数量。接口设置 `Cache-Control: no-cache, no-transform` 及 `X-Accel-Buffering: no`，但不保证所有代理都遵从；应在实际部署链路验证首片段到达时间。SSE 改善反馈时机，不保证缩短生成总耗时。
+
+本地演示仍运行 `./scripts/run-demo.sh`，打开 8082 的 `?demo=1`。新增片段后中断、缺少结束标记、非法 JSON、length 截断；选择超时可测试停止等待，或等待 12 秒总时限。普通模式保留第三篇故障演示行为。模拟上游会逐段发出真实 SSE 响应，不消耗真实模型额度。
+
+验证命令：
+
+```bash
+mvn clean verify
+node --test scripts/tests/sse.test.mjs
+```
+
+HTTP 集成测试覆盖提前到达的状态、多次 delta、协议参数继承、完整校验后保存且未创建工单、错误分类与零重试、无结束标记/中断/非法/超限输出、总超时、断开后的额度恢复、普通与流式共享并发限制。另测任务取消时的额度只释放一次，以及前端 UTF-8/事件拆包、残帧丢弃和终态后停止读取。
+
+本篇代码使用标签 **1109**；取得源码后可运行 `git switch --detach 1109` 查看对应版本。

@@ -1,5 +1,7 @@
 "use strict";
 
+import {consumeSse} from "./sse.mjs";
+
 const examples = {
     complete: "我使用 RuoYi-Vue 3.8.9，在系统管理的字典管理里，给同一个字典类型添加两条数据，字典值相同、标签不同，两次都提示成功。现在下拉框里有两个选项，希望重复添加时提示字典值已经存在。",
     missing: "昨天下午开始导出失败，提示超时，重新登录也没用。",
@@ -35,6 +37,11 @@ document.querySelectorAll("[data-example]").forEach(button => {
     });
 });
 
+const modeSelect = document.querySelector("#generation-mode");
+const cancelButton = document.querySelector("#cancel-button");
+let activeController = null;
+cancelButton.addEventListener("click", () => activeController?.abort());
+
 document.querySelector("#draft-form").addEventListener("submit", async event => {
     event.preventDefault();
     const text = description.value.trim();
@@ -44,22 +51,81 @@ document.querySelector("#draft-form").addEventListener("submit", async event => 
         return;
     }
     description.setCustomValidity("");
+    const streaming = modeSelect.value === "stream";
+    const controller = new AbortController();
+    activeController = controller;
     submitButton.disabled = true;
+    modeSelect.disabled = true;
+    confirmButton.hidden = true;
+    activeDraftId = null;
     submitButton.textContent = "正在整理…";
+    cancelButton.hidden = false;
     document.querySelector("#result").hidden = true;
+    document.querySelector("#stream-panel").hidden = !streaming;
+    document.querySelector("#stream-text").textContent = "";
+    document.querySelector("#stream-status").textContent = "正在连接服务…";
+    document.querySelector("#stream-timing").textContent = "";
+    const startedAt = performance.now();
+    let firstDeltaAt = null;
+    let terminal = false;
     try {
-        const response = await fetch("/api/v1/ticket-drafts", {
-            method: "POST", headers: {"Content-Type": "application/json"},
+        const response = await fetch("/api/v1/ticket-drafts" + (streaming ? "/stream" : ""), {
+            method: "POST", signal: controller.signal,
+            headers: {"Content-Type": "application/json", "Accept": "text/event-stream, application/json"},
             body: JSON.stringify({description: demoEnabled
                 ? "[demo:" + document.querySelector("#demo-scenario").value + ":" + crypto.randomUUID() + "] " + text
                 : text})
         });
-        const result = await response.json();
-        renderResult(result, response.ok);
+        if (!response.ok || !streaming) {
+            const result = await response.json();
+            renderResult(result, response.ok);
+            terminal = true;
+            if (streaming) document.querySelector("#stream-status").textContent = "请求未进入生成阶段";
+            return;
+        }
+        if (!response.headers.get("Content-Type")?.includes("text/event-stream")) {
+            throw new Error("服务器没有返回流式响应");
+        }
+        await consumeSse(response.body, (event, data) => {
+            if (terminal) return;
+            const body = JSON.parse(data);
+            if (event === "status") {
+                document.querySelector("#stream-status").textContent = body.message;
+            } else if (event === "delta") {
+                if (typeof body.text !== "string") throw new Error("无效的片段");
+                const preview = document.querySelector("#stream-text");
+                if (preview.textContent.length + body.text.length > 32000) throw new Error("预览内容过长");
+                preview.textContent += body.text;
+                if (firstDeltaAt === null && body.text.length) firstDeltaAt = performance.now();
+                document.querySelector("#stream-status").textContent = "正在接收模型片段，尚未形成有效草稿";
+                document.querySelector("#stream-timing").textContent = firstDeltaAt === null ? ""
+                    : "首个模型片段：" + ((firstDeltaAt - startedAt) / 1000).toFixed(2) + " 秒（浏览器观测）";
+            } else if (event === "result" || event === "failure") {
+                renderResult(body, event === "result");
+                terminal = true;
+                document.querySelector("#stream-status").textContent = event === "result"
+                    ? "完整响应已校验，处理结果见下方" : "本次生成失败，预览内容不可提交";
+                document.querySelector("#stream-timing").textContent += " · 总耗时："
+                    + ((performance.now() - startedAt) / 1000).toFixed(2) + " 秒（浏览器观测）";
+                return false;
+            }
+        });
+        if (!terminal) throw new Error("连接提前结束，未收到最终结果");
     } catch (error) {
-        renderResult({message: "无法连接服务或响应无法读取，请稍后重试。"}, false);
+        if (!terminal) {
+            const cancelled = controller.signal.aborted;
+            renderResult({message: cancelled ? "已停止等待，本次没有收到可用草稿。"
+                : "响应中断或无法读取，本次未能取得可用草稿。", action:
+                "输入已保留；预览尚未校验。停止本地等待不保证上游停止生成或计费，重试前请留意用量。"}, false);
+            if (streaming) document.querySelector("#stream-status").textContent = cancelled
+                ? "已停止等待 · 预览未完成" : "连接异常 · 预览不可提交";
+        }
     } finally {
+        controller.abort();
+        activeController = null;
         submitButton.disabled = false;
+        modeSelect.disabled = false;
+        cancelButton.hidden = true;
         submitButton.textContent = "生成草稿";
     }
 });
@@ -99,7 +165,7 @@ function renderResult(result, ok) {
     action.textContent = ok ? "" : result.action || "";
     const fields = document.querySelector("#draft-fields");
     fields.replaceChildren();
-    activeDraftId = result.draftId || null;
+    activeDraftId = ok ? result.draftId || null : null;
     confirmButton.hidden = !activeDraftId;
     confirmButton.disabled = false;
     confirmButton.textContent = "确认并创建工单";

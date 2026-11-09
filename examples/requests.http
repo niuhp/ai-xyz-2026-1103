@@ -29,3 +29,11 @@ Content-Type: application/json
 {
   "description": " "
 }
+
+
+### 第四篇：流式生成；客户端需支持 SSE，不可把 HTTP 200 直接当作生成成功
+POST http://localhost:8081/api/v1/ticket-drafts/stream
+Content-Type: application/json
+Accept: text/event-stream, application/json
+
+{"description":"我使用 RuoYi-Vue 3.8.9，在字典管理添加重复字典值成功，希望提示已存在。"}

@@ -25,7 +25,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * 校验模型输出并计算缺失项；不创建真实工单。
+ * 校验并保存待审核草稿；只有人工确认接口才能创建本地工单。
  *
  * @author niuhaipeng
  */
@@ -59,30 +59,41 @@ public class TicketDraftService {
     }
 
     public TicketDraftResponseDTO generate(String description, String requestId) {
+        acquirePermit();
+        long startedAt = System.nanoTime();
+        try {
+            return complete(modelGateway.extract(description), requestId, startedAt);
+        } finally {
+            releasePermit();
+        }
+    }
+
+    void acquirePermit() {
         if (!permits.tryAcquire()) {
             throw new TicketProcessingException(ProcessingError.BUSY);
         }
-        long startedAt = System.nanoTime();
-        try {
-            ExtractionResult result = modelGateway.extract(description);
-            validate(result);
-            TicketDraftResponseDTO response = toResponse(result, requestId);
-            if (response.getDraft() != null) {
-                String draftId = UUID.randomUUID().toString();
-                response.setDraftId(draftId);
-                try {
-                    ticketRepository.saveDraft(draftId, jsonMapper.writeValueAsString(response.getDraft()));
-                } catch (JacksonException exception) {
-                    throw new TicketProcessingException(ProcessingError.INTERNAL_ERROR);
-                }
+    }
+
+    void releasePermit() {
+        permits.release();
+    }
+
+    TicketDraftResponseDTO complete(ExtractionResult result, String requestId, long startedAt) {
+        validate(result);
+        TicketDraftResponseDTO response = toResponse(result, requestId);
+        if (response.getDraft() != null) {
+            String draftId = UUID.randomUUID().toString();
+            response.setDraftId(draftId);
+            try {
+                ticketRepository.saveDraft(draftId, jsonMapper.writeValueAsString(response.getDraft()));
+            } catch (JacksonException exception) {
+                throw new TicketProcessingException(ProcessingError.INTERNAL_ERROR);
             }
-            response.setElapsedMillis(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt));
-            LOGGER.info("ticket_draft requestId={} status={} elapsedMillis={}",
-                    requestId, response.getStatus(), response.getElapsedMillis());
-            return response;
-        } finally {
-            permits.release();
         }
+        response.setElapsedMillis(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt));
+        LOGGER.info("ticket_draft requestId={} status={} elapsedMillis={}",
+                requestId, response.getStatus(), response.getElapsedMillis());
+        return response;
     }
 
     public TicketCreatedDTO create(CreateTicketRequestDTO request) {

@@ -45,6 +45,7 @@ app:
     platform-name: ai-xyz-2026-1103
     max-concurrent-requests: 2
     model-max-retries: ${MODEL_MAX_RETRIES:1}
+    stream-timeout: ${STREAM_TIMEOUT:45s}
 logging:
   level:
     com.niuhp.aixyz: INFO

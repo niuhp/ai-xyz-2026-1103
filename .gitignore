@@ -7,3 +7,5 @@ target/
 !.env.example
 *.log
 .local/
+__pycache__/
+*.pyc

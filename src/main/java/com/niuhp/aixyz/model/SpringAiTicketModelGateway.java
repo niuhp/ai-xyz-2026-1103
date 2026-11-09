@@ -3,6 +3,9 @@ package com.niuhp.aixyz.model;
 import com.niuhp.aixyz.api.TokenUsageDTO;
 import com.niuhp.aixyz.service.ProcessingError;
 import com.niuhp.aixyz.service.TicketProcessingException;
+import reactor.core.publisher.Flux;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -20,7 +23,7 @@ import tools.jackson.databind.json.JsonMapper;
  * @author niuhaipeng
  */
 @Component
-public class SpringAiTicketModelGateway implements TicketModelGateway {
+public class SpringAiTicketModelGateway implements TicketModelGateway, TicketStreamingModelGateway {
 
     private static final String FINISH_REASON_STOP = "stop";
 
@@ -35,8 +38,18 @@ public class SpringAiTicketModelGateway implements TicketModelGateway {
 
     private final ModelCallExecutor modelCallExecutor;
 
+    private final ChatClient streamingChatClient;
+
     public SpringAiTicketModelGateway(ChatClient ticketChatClient, String ticketSystemPrompt, JsonMapper jsonMapper,
             ModelCallExecutor modelCallExecutor) {
+        this(ticketChatClient, ticketChatClient, ticketSystemPrompt, jsonMapper, modelCallExecutor);
+    }
+
+    @Autowired
+    public SpringAiTicketModelGateway(ChatClient ticketChatClient,
+            @Qualifier("ticketStreamChatClient") ChatClient streamingChatClient, String ticketSystemPrompt,
+            JsonMapper jsonMapper, ModelCallExecutor modelCallExecutor) {
+        this.streamingChatClient = streamingChatClient;
         this.modelCallExecutor = modelCallExecutor;
         this.chatClient = ticketChatClient;
         this.jsonMapper = jsonMapper;
@@ -52,11 +65,23 @@ public class SpringAiTicketModelGateway implements TicketModelGateway {
                 .call().chatResponse());
         if (response == null || response.getResult() == null) {
             throw new TicketProcessingException(ProcessingError.INVALID_MODEL_OUTPUT);
-        } else {
-            response.getResult().getOutput();
         }
         String finishReason = response.getResult().getMetadata().getFinishReason();
         String content = response.getResult().getOutput().getText();
+        return parse(content, finishReason, response.getMetadata().getModel(),
+                toUsage(response.getMetadata().getUsage()));
+    }
+
+    @Override
+    public Flux<ChatResponse> stream(String description) {
+        // 流式请求不经过 ModelCallExecutor，也不挂载 retry 操作符。
+        return streamingChatClient.prompt()
+                .messages(new SystemMessage(systemPrompt), new UserMessage(description))
+                .stream().chatResponse();
+    }
+
+    @Override
+    public ExtractionResult parse(String content, String finishReason, String model, TokenUsageDTO usage) {
         if (!FINISH_REASON_STOP.equalsIgnoreCase(finishReason) || !StringUtils.hasText(content)) {
             throw new TicketProcessingException(ProcessingError.INVALID_MODEL_OUTPUT);
         }
@@ -68,8 +93,8 @@ public class SpringAiTicketModelGateway implements TicketModelGateway {
         }
         ExtractionResult result = new ExtractionResult();
         result.setExtraction(extraction);
-        result.setModel(response.getMetadata().getModel());
-        result.setUsage(toUsage(response.getMetadata().getUsage()));
+        result.setModel(model);
+        result.setUsage(usage);
         return result;
     }
 

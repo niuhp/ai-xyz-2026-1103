@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 
 /**
  * 错误响应与日志脱敏：不输出密钥、用户文本、上游响应原文。
@@ -33,6 +34,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({MethodArgumentNotValidException.class, HttpMessageNotReadableException.class})
     public ResponseEntity<ApiErrorDTO> handleInvalidInput(HttpServletRequest request) {
         return error(ProcessingError.INVALID_REQUEST, request);
+    }
+
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public void handleDisconnectedClient(HttpServletRequest request) {
+        // 响应已不可写，不能再向已经关闭的 SSE 连接发送 JSON 错误。
+        LOGGER.info("stream_client_disconnected requestId={}",
+                request.getAttribute(RequestIdFilter.REQUEST_ID_ATTRIBUTE));
     }
 
     @ExceptionHandler(Exception.class)
