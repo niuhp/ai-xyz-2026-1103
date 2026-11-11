@@ -1,6 +1,6 @@
 package com.niuhp.aixyz.model;
 
-import com.niuhp.aixyz.api.TokenUsageDTO;
+import com.niuhp.aixyz.dto.response.TokenUsageDTO;
 
 /**
  * 模型边界的解析结果及用量。

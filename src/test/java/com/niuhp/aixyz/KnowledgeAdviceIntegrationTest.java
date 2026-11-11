@@ -1,5 +1,6 @@
 package com.niuhp.aixyz;
 
+import com.niuhp.aixyz.model.ModelConcurrencyLimiter;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
@@ -41,6 +42,8 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "spring.datasource.url=jdbc:h2:mem:knowledgetest;DB_CLOSE_DELAY=-1"})
 class KnowledgeAdviceIntegrationTest {
 
+    private static final String ADVICE_PATH = "/api/v1/knowledge/advice";
+    private static final String DRAFT_PATH = "/api/v1/ticket-drafts";
     private static final String FIELD_DESCRIPTION = "description";
     private static final String FIELD_MODE = "mode";
     private static final String MODE_RETRIEVAL = "RETRIEVAL";
@@ -65,6 +68,8 @@ class KnowledgeAdviceIntegrationTest {
     private int port;
     @Autowired
     private JdbcTemplate jdbc;
+    @Autowired
+    private ModelConcurrencyLimiter limiter;
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
@@ -171,13 +176,45 @@ class KnowledgeAdviceIntegrationTest {
         assertNoWrites();
     }
 
+    @Test
+    void shouldShareModelCapacityAcrossAdviceDraftAndStream() throws Exception {
+        limiter.acquirePermit();
+        limiter.acquirePermit();
+        try {
+            for (String path : List.of(ADVICE_PATH, DRAFT_PATH,
+                    "/api/v1/ticket-drafts/stream")) {
+                Map<String, ?> payload = ADVICE_PATH.equals(path)
+                        ? Map.of(FIELD_DESCRIPTION, QUESTION, FIELD_MODE, MODE_RETRIEVAL)
+                        : Map.of(FIELD_DESCRIPTION, QUESTION);
+                HttpResponse<String> response = post(path, payload);
+                assertThat(response.statusCode()).as(path).isEqualTo(503);
+                assertThat(response.body()).contains("BUSY");
+            }
+            JsonNode absent = JSON.readTree(post(Map.of(FIELD_DESCRIPTION,
+                    "量子纠缠与光子偏振实验", FIELD_MODE, MODE_RETRIEVAL)).body());
+            assertThat(absent.path("status").asString()).isEqualTo("NO_MATCH");
+            assertThat(CALLS.get()).isZero();
+        } finally {
+            limiter.releasePermit();
+            limiter.releasePermit();
+        }
+        assertThat(post(Map.of(FIELD_DESCRIPTION, QUESTION, FIELD_MODE, MODE_RETRIEVAL)).statusCode())
+                .isEqualTo(200);
+        assertThat(CALLS.get()).isEqualTo(1);
+        assertNoWrites();
+    }
+
     private void assertNoWrites() {
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM ticket_draft", Integer.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM support_ticket", Integer.class)).isZero();
     }
 
     private HttpResponse<String> post(Map<String, ?> payload) throws Exception {
-        HttpRequest request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/v1/knowledge/advice"))
+        return post(ADVICE_PATH, payload);
+    }
+
+    private HttpResponse<String> post(String path, Map<String, ?> payload) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
                 .timeout(Duration.ofSeconds(10)).header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(JSON.writeValueAsString(payload))).build();
         return client.send(request, HttpResponse.BodyHandlers.ofString());

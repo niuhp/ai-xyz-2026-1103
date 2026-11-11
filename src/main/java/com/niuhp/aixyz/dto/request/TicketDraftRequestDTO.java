@@ -1,4 +1,4 @@
-package com.niuhp.aixyz.api;
+package com.niuhp.aixyz.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

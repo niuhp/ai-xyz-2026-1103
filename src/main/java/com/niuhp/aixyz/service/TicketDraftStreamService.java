@@ -1,6 +1,9 @@
 package com.niuhp.aixyz.service;
 
+import com.niuhp.aixyz.exception.ProcessingError;
+import com.niuhp.aixyz.exception.TicketProcessingException;
 import com.niuhp.aixyz.model.ExtractionResult;
+import com.niuhp.aixyz.model.ModelConcurrencyLimiter;
 import com.niuhp.aixyz.model.ModelFailureClassifier;
 import com.niuhp.aixyz.model.StreamingExtraction;
 import com.niuhp.aixyz.model.TicketStreamingModelGateway;
@@ -30,6 +33,7 @@ public class TicketDraftStreamService {
     private static final int HEARTBEAT_SECONDS = 2;
     private static final int MAX_CAUSE_DEPTH = 32;
     private final TicketDraftService drafts;
+    private final ModelConcurrencyLimiter limiter;
     private final TicketStreamingModelGateway gateway;
     private final ModelFailureClassifier classifier;
     private final ExecutorService streamWorkers;
@@ -37,10 +41,11 @@ public class TicketDraftStreamService {
     private final Duration timeout;
 
     public TicketDraftStreamService(TicketDraftService drafts, TicketStreamingModelGateway gateway,
-            ModelFailureClassifier classifier, ExecutorService streamWorkers,
+            ModelFailureClassifier classifier, ModelConcurrencyLimiter limiter, ExecutorService streamWorkers,
             ScheduledThreadPoolExecutor streamTimer, @Value("${app.ticket.stream-timeout:45s}") Duration timeout) {
         Assert.isTrue(!timeout.isNegative() && !timeout.isZero(), "流式时限必须为正数");
         this.drafts = drafts;
+        this.limiter = limiter;
         this.gateway = gateway;
         this.classifier = classifier;
         this.streamWorkers = streamWorkers;
@@ -50,10 +55,10 @@ public class TicketDraftStreamService {
 
     public SseEmitter generate(String description, String requestId) {
         // 进入异步发送前取得额度，BUSY 仍以普通 HTTP 错误响应返回。
-        drafts.acquirePermit();
+        limiter.acquirePermit();
         DraftStreamSession session = new DraftStreamSession(requestId, timeout.toMillis());
         StreamWorkerTask worker = new StreamWorkerTask(() -> run(description, requestId, session),
-                drafts::releasePermit);
+                limiter::releasePermit);
         session.attachWorker(worker);
         try {
             session.send("status", Map.of("requestId", requestId, "stage", "accepted",

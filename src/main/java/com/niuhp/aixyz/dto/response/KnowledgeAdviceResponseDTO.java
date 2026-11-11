@@ -1,9 +1,9 @@
-package com.niuhp.aixyz.api;
+package com.niuhp.aixyz.dto.response;
 
-import java.util.List;
 import com.niuhp.aixyz.knowledge.AdviceMode;
-import com.niuhp.aixyz.knowledge.ModelAdviceDTO;
 import com.niuhp.aixyz.knowledge.CaseMatchDTO;
+import com.niuhp.aixyz.model.ModelAdviceDTO;
+import java.util.List;
 
 /**
  * 第五篇知识库接口数据，只保存显式字段。

@@ -1,19 +1,19 @@
-package com.niuhp.aixyz.api;
+package com.niuhp.aixyz.exception;
 
-import com.niuhp.aixyz.service.ProcessingError;
-import com.niuhp.aixyz.service.TicketProcessingException;
+import com.niuhp.aixyz.dto.response.ApiErrorDTO;
+import com.niuhp.aixyz.filter.RequestIdFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.HttpMediaTypeNotSupportedException;
-import org.springframework.web.HttpRequestMethodNotSupportedException;
-import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * 错误响应与日志脱敏：不输出密钥、用户文本、上游响应原文。

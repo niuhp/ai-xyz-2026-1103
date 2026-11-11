@@ -1,4 +1,4 @@
-package com.niuhp.aixyz.api;
+package com.niuhp.aixyz.dto.response;
 
 import com.niuhp.aixyz.domain.DraftStatus;
 import com.niuhp.aixyz.domain.TicketDraftDTO;

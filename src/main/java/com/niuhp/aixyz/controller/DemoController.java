@@ -1,4 +1,4 @@
-package com.niuhp.aixyz.api;
+package com.niuhp.aixyz.controller;
 
 import java.util.Map;
 import org.springframework.context.annotation.Profile;

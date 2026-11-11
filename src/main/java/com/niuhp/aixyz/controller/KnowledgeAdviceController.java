@@ -1,5 +1,8 @@
-package com.niuhp.aixyz.api;
+package com.niuhp.aixyz.controller;
 
+import com.niuhp.aixyz.dto.request.KnowledgeAdviceRequestDTO;
+import com.niuhp.aixyz.dto.response.KnowledgeAdviceResponseDTO;
+import com.niuhp.aixyz.filter.RequestIdFilter;
 import com.niuhp.aixyz.knowledge.CaseKnowledgeBase;
 import com.niuhp.aixyz.service.KnowledgeAdviceService;
 import jakarta.servlet.http.HttpServletRequest;

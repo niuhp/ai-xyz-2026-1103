@@ -1,8 +1,8 @@
 package com.niuhp.aixyz.repository;
 
 import com.niuhp.aixyz.domain.TicketDraftDTO;
-import com.niuhp.aixyz.service.ProcessingError;
-import com.niuhp.aixyz.service.TicketProcessingException;
+import com.niuhp.aixyz.exception.ProcessingError;
+import com.niuhp.aixyz.exception.TicketProcessingException;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;

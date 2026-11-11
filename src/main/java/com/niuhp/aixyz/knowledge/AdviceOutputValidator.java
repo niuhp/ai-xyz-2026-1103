@@ -1,7 +1,8 @@
 package com.niuhp.aixyz.knowledge;
 
-import com.niuhp.aixyz.service.ProcessingError;
-import com.niuhp.aixyz.service.TicketProcessingException;
+import com.niuhp.aixyz.exception.ProcessingError;
+import com.niuhp.aixyz.exception.TicketProcessingException;
+import com.niuhp.aixyz.model.ModelAdviceDTO;
 import jakarta.validation.Validator;
 import java.util.HashSet;
 import java.util.List;

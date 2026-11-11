@@ -1,6 +1,6 @@
 package com.niuhp.aixyz.model;
 
-import com.niuhp.aixyz.api.TokenUsageDTO;
+import com.niuhp.aixyz.dto.response.TokenUsageDTO;
 import org.springframework.ai.chat.model.ChatResponse;
 import reactor.core.publisher.Flux;
 

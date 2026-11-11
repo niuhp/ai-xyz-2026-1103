@@ -1,4 +1,4 @@
-package com.niuhp.aixyz.service;
+package com.niuhp.aixyz.exception;
 
 import org.springframework.http.HttpStatus;
 

@@ -1,4 +1,4 @@
-package com.niuhp.aixyz.service;
+package com.niuhp.aixyz.exception;
 
 /**
  * 仅携带可对外公开错误的业务异常。

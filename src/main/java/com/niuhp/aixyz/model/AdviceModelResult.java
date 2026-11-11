@@ -1,7 +1,6 @@
 package com.niuhp.aixyz.model;
 
-import com.niuhp.aixyz.api.TokenUsageDTO;
-import com.niuhp.aixyz.knowledge.ModelAdviceDTO;
+import com.niuhp.aixyz.dto.response.TokenUsageDTO;
 
 /**
  * 模型建议及可选上游用量。

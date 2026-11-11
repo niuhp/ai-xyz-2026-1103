@@ -1,4 +1,4 @@
-package com.niuhp.aixyz.api;
+package com.niuhp.aixyz.dto.response;
 
 /**
  * 已创建的工单摘要。

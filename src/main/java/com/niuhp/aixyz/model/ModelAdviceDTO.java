@@ -1,5 +1,6 @@
-package com.niuhp.aixyz.knowledge;
+package com.niuhp.aixyz.model;
 
+import com.niuhp.aixyz.knowledge.AdviceStepDTO;
 import java.util.List;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;

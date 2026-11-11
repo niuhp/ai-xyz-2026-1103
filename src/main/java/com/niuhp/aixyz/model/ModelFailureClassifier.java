@@ -1,13 +1,13 @@
 package com.niuhp.aixyz.model;
 
-import com.niuhp.aixyz.service.ProcessingError;
+import com.niuhp.aixyz.exception.ProcessingError;
 import com.openai.errors.OpenAIException;
 import com.openai.errors.OpenAIServiceException;
 import java.io.InterruptedIOException;
 import java.net.http.HttpTimeoutException;
 import java.util.Set;
-import org.springframework.stereotype.Component;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
 
 /**
  * 只读取上游状态和结构化错误码，不把供应商原文传给用户。

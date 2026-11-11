@@ -1,7 +1,7 @@
 package com.niuhp.aixyz.model;
 
-import com.niuhp.aixyz.service.ProcessingError;
-import com.niuhp.aixyz.service.TicketProcessingException;
+import com.niuhp.aixyz.exception.ProcessingError;
+import com.niuhp.aixyz.exception.TicketProcessingException;
 import com.openai.errors.OpenAIException;
 import com.openai.errors.OpenAIServiceException;
 import java.time.Duration;
@@ -17,8 +17,8 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 /**

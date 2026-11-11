@@ -1,13 +1,14 @@
 package com.niuhp.aixyz.service;
 
-import com.niuhp.aixyz.api.KnowledgeAdviceRequestDTO;
-import com.niuhp.aixyz.api.KnowledgeAdviceResponseDTO;
+import com.niuhp.aixyz.dto.request.KnowledgeAdviceRequestDTO;
+import com.niuhp.aixyz.dto.response.KnowledgeAdviceResponseDTO;
 import com.niuhp.aixyz.knowledge.AdviceMode;
 import com.niuhp.aixyz.knowledge.AdviceOutputValidator;
 import com.niuhp.aixyz.knowledge.CaseKnowledgeBase;
 import com.niuhp.aixyz.knowledge.CaseMatchDTO;
 import com.niuhp.aixyz.model.AdviceModelResult;
 import com.niuhp.aixyz.model.KnowledgeAdviceGateway;
+import com.niuhp.aixyz.model.ModelConcurrencyLimiter;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
@@ -26,14 +27,14 @@ public class KnowledgeAdviceService {
     private final CaseKnowledgeBase knowledgeBase;
     private final KnowledgeAdviceGateway gateway;
     private final AdviceOutputValidator validator;
-    private final TicketDraftService drafts;
+    private final ModelConcurrencyLimiter limiter;
 
     public KnowledgeAdviceService(CaseKnowledgeBase knowledgeBase, KnowledgeAdviceGateway gateway,
-            AdviceOutputValidator validator, TicketDraftService drafts) {
+            AdviceOutputValidator validator, ModelConcurrencyLimiter limiter) {
         this.knowledgeBase = knowledgeBase;
         this.gateway = gateway;
         this.validator = validator;
-        this.drafts = drafts;
+        this.limiter = limiter;
     }
 
     public KnowledgeAdviceResponseDTO generate(KnowledgeAdviceRequestDTO request, String requestId) {
@@ -53,7 +54,7 @@ public class KnowledgeAdviceService {
             response.setStatus("NO_MATCH");
             response.setMessage("当前词项检索规则和阈值下未找到相关教学案例，未调用生成模型；请补充具体症状或换用通用建议。");
         } else {
-            drafts.acquirePermit();
+            limiter.acquirePermit();
             try {
                 AdviceModelResult result = gateway.generate(request.getDescription(), request.getMode(), matches);
                 validator.validate(result.getAdvice(), request.getMode(), matches);
@@ -68,7 +69,7 @@ public class KnowledgeAdviceService {
                         ? "建议参考教学案例，来源和摘录已做结构校验；是否适用于当前问题仍须人工核实。"
                         : "未检索知识库，仅提供通用排查方向；没有历史案例依据。");
             } finally {
-                drafts.releasePermit();
+                limiter.releasePermit();
             }
         }
         response.setElapsedMillis(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started));

@@ -1,25 +1,25 @@
 package com.niuhp.aixyz.service;
 
-import com.niuhp.aixyz.api.TicketDraftResponseDTO;
-import com.niuhp.aixyz.api.TicketCreatedDTO;
-import com.niuhp.aixyz.api.CreateTicketRequestDTO;
 import com.niuhp.aixyz.domain.DraftStatus;
 import com.niuhp.aixyz.domain.TicketDraftDTO;
+import com.niuhp.aixyz.dto.request.CreateTicketRequestDTO;
+import com.niuhp.aixyz.dto.response.TicketCreatedDTO;
+import com.niuhp.aixyz.dto.response.TicketDraftResponseDTO;
+import com.niuhp.aixyz.exception.ProcessingError;
+import com.niuhp.aixyz.exception.TicketProcessingException;
 import com.niuhp.aixyz.model.ExtractionResult;
+import com.niuhp.aixyz.model.ModelConcurrencyLimiter;
 import com.niuhp.aixyz.model.ModelExtractionDTO;
 import com.niuhp.aixyz.model.TicketModelGateway;
 import com.niuhp.aixyz.repository.TicketRepository;
 import jakarta.validation.Validator;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
@@ -45,37 +45,25 @@ public class TicketDraftService {
     private final JsonMapper jsonMapper;
 
     /** 保护本地演示服务的并发额度。 */
-    private final Semaphore permits;
+    private final ModelConcurrencyLimiter limiter;
 
     public TicketDraftService(TicketModelGateway modelGateway, Validator validator, TicketRepository ticketRepository,
-            JsonMapper jsonMapper,
-            @Value("${app.ticket.max-concurrent-requests:2}") int maxConcurrentRequests) {
-        Assert.isTrue(maxConcurrentRequests > 0, "最大并发数必须大于零");
+            JsonMapper jsonMapper, ModelConcurrencyLimiter limiter) {
         this.modelGateway = modelGateway;
         this.validator = validator;
         this.ticketRepository = ticketRepository;
         this.jsonMapper = jsonMapper;
-        this.permits = new Semaphore(maxConcurrentRequests);
+        this.limiter = limiter;
     }
 
     public TicketDraftResponseDTO generate(String description, String requestId) {
-        acquirePermit();
+        limiter.acquirePermit();
         long startedAt = System.nanoTime();
         try {
             return complete(modelGateway.extract(description), requestId, startedAt);
         } finally {
-            releasePermit();
+            limiter.releasePermit();
         }
-    }
-
-    void acquirePermit() {
-        if (!permits.tryAcquire()) {
-            throw new TicketProcessingException(ProcessingError.BUSY);
-        }
-    }
-
-    void releasePermit() {
-        permits.release();
     }
 
     TicketDraftResponseDTO complete(ExtractionResult result, String requestId, long startedAt) {

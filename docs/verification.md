@@ -60,3 +60,15 @@ Token 是供应商报告的用量，不是费用；以上耗时与输出只代�
 - 全程采用本机模拟上游和占位 Key，没有调用真实供应商，不消耗真实模型额度；可共享文件未发现真实 Key。
 
 局限：16 条虚构教学案例；TF-IDF 词项检索不是语义 Embedding，不宣称通用召回准确率。模型模拟响应固定，验证的是协议与校验行为，不是真实模型质量。编号和摘录校验不能证明语义支持关系，仍需人工审核；没有实现真实资料鉴权、生产权限过滤或自动执行。
+
+
+## 2026-11-11：目录与共享并发控制整理（tag 1111）
+
+- 拆分 controller、dto.request、dto.response、exception、filter；模型输出 ModelAdviceDTO 移至 model，案例与检索对象留在 knowledge。
+- 从 TicketDraftService 提取单例 ModelConcurrencyLimiter，普通生成、SSE 与 RAG 共享同一个实例，默认并发数和配置键不变。
+- KnowledgeAdviceService 不再依赖 TicketDraftService；SSE 保留由 StreamWorkerTask 在任务结束时释放额度的机制。
+- JDK 25 下最终 `mvn clean verify` 成功：39 项 Java 测试，0 失败/错误；Alibaba P3C PMD 0 违规。
+- 新增真实 HTTP 测试验证同一并发额度耗尽时，三类生成接口均返回 503 / BUSY；无匹配仍零模型调用，额度归还后恢复成功。
+- 原有 SSE 取消、超时、异常和并发释放测试均通过；`node --test scripts/tests/sse.test.mjs` 5 项通过。
+- 本轮测试仅使用本机假上游和占位 Key，不调用真实供应商；未启动独立 8082/18083 服务。
+- 经用户明确确认，删除并重新创建本地 tag 1111，指向包含本次重构的提交；原标签对应代码仍可通过提交 902928b 查阅。

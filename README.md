@@ -175,11 +175,18 @@ flowchart LR
 ```text
 src/main/java/com/niuhp/aixyz/
 ├── AiXyzApplication.java
-├── api/                  # Controller、请求/响应 DTO、请求编号、异常处理
+├── controller/           # HTTP 接口
+├── dto/
+│   ├── request/          # 接口请求
+│   └── response/         # 接口响应
+├── exception/            # 错误码、业务异常、统一异常处理
+├── filter/               # 请求编号过滤器
+├── knowledge/            # 案例、索引、检索及引用校验
+├── repository/           # 数据访问
 ├── config/               # 模型参数及提示词加载
 ├── domain/               # 工单字段及枚举
-├── model/                # 模型适配器、严格 JSON 解析、用量转换
-└── service/              # 业务校验、完整性计算、并发控制
+├── model/                # 模型适配器、输出协议、共享并发额度
+└── service/              # 业务流程、草稿校验与保存
 src/main/resources/
 ├── application.yml
 ├── prompts/              # 系统提示词
@@ -293,7 +300,7 @@ HTTP 集成测试覆盖提前到达的状态、多次 delta、协议参数继承
 本篇代码使用标签 **1109**；取得源码后可运行 `git switch --detach 1109` 查看对应版本。
 
 
-## 第五篇：参考历史案例的 RAG（tag 1111）
+## 第五篇：参考历史案例的 RAG
 
 正常启动后打开 [历史案例参考页面](http://localhost:8081/knowledge.html)。IDEA 仍运行 `AiXyzApplication`，JDK 25，工作目录为项目根目录，无需新增服务。
 
@@ -318,3 +325,10 @@ HTTP 集成测试覆盖提前到达的状态、多次 delta、协议参数继承
 | `INSUFFICIENT_EVIDENCE` | 模型判断资料不足，不返回操作步骤 |
 
 描述和案例均作为不可信资料；提示词隔离只能降低指令干扰，不能保证抵抗所有注入。真实部署前还需要鉴权、数据脱敏、资料访问权限、检索质量评估等。本接口沿用同步模型的并发额度、有界重试和单次 15 秒超时，未增加端到端总时限。真实模式会把描述及召回案例发送给所配置供应商，勿输入未获授权的内部资料。
+
+
+### 包结构与共享并发控制整理（tag 1111）
+
+按确认后的版本重新创建 `1111`，包含本次包结构整理及共享并发控制调整。HTTP 路径、请求响应字段、模型配置和默认并发数保持兼容。接口 DTO 按请求/响应分包，模型输出 `ModelAdviceDTO` / `ModelExtractionDTO` 位于 `model`；案例及检索对象留在 `knowledge`，业务草稿留在 `domain`。
+
+`ModelConcurrencyLimiter` 为 Spring 单例，普通草稿、SSE 与历史案例建议直接注入同一实例，共享 `app.ticket.max-concurrent-requests`（默认 2）。同步调用在 finally 释放；SSE 沿用 StreamWorkerTask 的释放时机，任务真正结束后才归还额度。KnowledgeAdviceService 不再为了并发控制依赖 TicketDraftService。无匹配路径不调用模型，也不占用额度。这是单实例保护，不是分布式限流。

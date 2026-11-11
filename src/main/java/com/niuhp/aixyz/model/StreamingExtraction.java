@@ -1,8 +1,8 @@
 package com.niuhp.aixyz.model;
 
-import com.niuhp.aixyz.api.TokenUsageDTO;
-import com.niuhp.aixyz.service.ProcessingError;
-import com.niuhp.aixyz.service.TicketProcessingException;
+import com.niuhp.aixyz.dto.response.TokenUsageDTO;
+import com.niuhp.aixyz.exception.ProcessingError;
+import com.niuhp.aixyz.exception.TicketProcessingException;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.util.StringUtils;
 

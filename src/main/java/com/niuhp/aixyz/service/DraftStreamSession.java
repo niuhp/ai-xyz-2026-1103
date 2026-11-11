@@ -1,7 +1,8 @@
 package com.niuhp.aixyz.service;
 
-import com.niuhp.aixyz.api.ApiErrorDTO;
-import com.niuhp.aixyz.api.TicketDraftResponseDTO;
+import com.niuhp.aixyz.dto.response.ApiErrorDTO;
+import com.niuhp.aixyz.dto.response.TicketDraftResponseDTO;
+import com.niuhp.aixyz.exception.ProcessingError;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.Future;

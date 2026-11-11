@@ -1,6 +1,9 @@
 package com.niuhp.aixyz.service;
 
+import com.niuhp.aixyz.exception.ProcessingError;
+import com.niuhp.aixyz.exception.TicketProcessingException;
 import com.niuhp.aixyz.model.ExtractionResult;
+import com.niuhp.aixyz.model.ModelConcurrencyLimiter;
 import com.niuhp.aixyz.model.ModelExtractionDTO;
 import com.niuhp.aixyz.model.TicketModelGateway;
 import com.niuhp.aixyz.repository.TicketRepository;
@@ -42,7 +45,7 @@ class TicketDraftServiceTest {
         };
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
             TicketDraftService service = new TicketDraftService(gateway, factory.getValidator(),
-                    org.mockito.Mockito.mock(TicketRepository.class), JsonMapper.builder().build(), 1);
+                    org.mockito.Mockito.mock(TicketRepository.class), JsonMapper.builder().build(), new ModelConcurrencyLimiter(1));
             CompletableFuture<Void> first = CompletableFuture.runAsync(() ->
                     assertThatThrownBy(() -> service.generate("导出失败", "first"))
                             .isInstanceOf(TicketProcessingException.class)
@@ -69,7 +72,7 @@ class TicketDraftServiceTest {
         result.setExtraction(extraction);
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
             TicketDraftService service = new TicketDraftService(description -> result, factory.getValidator(),
-                    org.mockito.Mockito.mock(TicketRepository.class), JsonMapper.builder().build(), 1);
+                    org.mockito.Mockito.mock(TicketRepository.class), JsonMapper.builder().build(), new ModelConcurrencyLimiter(1));
             assertThatThrownBy(() -> service.generate("导出失败", "test"))
                     .hasMessage(ProcessingError.INVALID_MODEL_OUTPUT.getMessage());
         }

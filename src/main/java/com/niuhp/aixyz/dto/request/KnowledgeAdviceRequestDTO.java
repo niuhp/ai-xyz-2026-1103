@@ -1,9 +1,9 @@
-package com.niuhp.aixyz.api;
+package com.niuhp.aixyz.dto.request;
 
+import com.niuhp.aixyz.knowledge.AdviceMode;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import com.niuhp.aixyz.knowledge.AdviceMode;
 
 /**
  * 第五篇知识库接口数据，只保存显式字段。
