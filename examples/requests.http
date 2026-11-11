@@ -37,3 +37,22 @@ Content-Type: application/json
 Accept: text/event-stream, application/json
 
 {"description":"我使用 RuoYi-Vue 3.8.9，在字典管理添加重复字典值成功，希望提示已存在。"}
+
+
+### 第五篇：检索历史案例后生成建议，不写工单
+POST http://localhost:8081/api/v1/knowledge/advice
+Content-Type: application/json
+
+{"description":"导出 Excel 选择全年数据等待很久提示超时，缩小日期范围后正常","mode":"RETRIEVAL"}
+
+### 对照：不查询知识库，只提供通用建议（独立模型调用）
+POST http://localhost:8081/api/v1/knowledge/advice
+Content-Type: application/json
+
+{"description":"导出 Excel 选择全年数据等待很久提示超时，缩小日期范围后正常","mode":"BASELINE"}
+
+### 无匹配：NO_MATCH，不调用生成模型
+POST http://localhost:8081/api/v1/knowledge/advice
+Content-Type: application/json
+
+{"description":"量子纠缠与光子偏振实验","mode":"RETRIEVAL"}

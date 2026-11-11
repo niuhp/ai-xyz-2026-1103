@@ -41,6 +41,8 @@ management:
     health:
       show-details: never
 app:
+  knowledge:
+    similarity-threshold: ${KNOWLEDGE_THRESHOLD:0.16}
   ticket:
     platform-name: ai-xyz-2026-1103
     max-concurrent-requests: 2

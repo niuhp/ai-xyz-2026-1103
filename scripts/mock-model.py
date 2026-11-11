@@ -21,6 +21,15 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         payload = json.loads(self.rfile.read(int(self.headers.get('Content-Length', '0'))))
         content = payload.get('messages', [{}])[-1].get('content', '')
+        task = None
+        try:
+            task = json.loads(content)
+        except (ValueError, TypeError):
+            pass
+        if isinstance(task, dict) and task.get('task') == 'knowledge-advice':
+            content = task['description']
+        else:
+            task = None
         match = re.search(r'\[demo:(\w+):([\w-]+)\]', content)
         scenario, request = match.groups() if match else ('success', 'default')
         with LOCK:
@@ -45,10 +54,11 @@ class Handler(BaseHTTPRequestHandler):
             self.stream(payload, scenario)
             return
         if status == 200:
+            output = self.advice(task, scenario) if task else DRAFT
             body = {'id': 'chatcmpl-local-demo', 'object': 'chat.completion', 'created': 1,
                     'model': 'local-fault-simulator',
                     'choices': [{'index': 0, 'finish_reason': 'stop',
-                                 'message': {'role': 'assistant', 'content': json.dumps(DRAFT, ensure_ascii=False)}}],
+                                 'message': {'role': 'assistant', 'content': json.dumps(output, ensure_ascii=False)}}],
                     'usage': {'prompt_tokens': 0, 'completion_tokens': 0, 'total_tokens': 0}}
         else:
             body = {'error': {'message': 'local simulated failure', 'code': code,
@@ -64,6 +74,27 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(data)
         except (BrokenPipeError, ConnectionResetError):
             pass
+
+    def advice(self, task, scenario):
+        if scenario == 'insufficient':
+            return {'supported': False, 'summary': '资料不足，暂不提出具体处理建议。', 'steps': [],
+                    'limitations': ['请补充发生时间、日志与复现条件。']}
+        if task['mode'] == 'BASELINE':
+            return {'supported': True, 'summary': '以下是未查阅历史案例的通用排查方向，不能据此确定根因。',
+                'steps': [{'text': '先记录发生时间、请求编号和实际报错，在测试环境复现并检查日志。', 'evidence': []},
+                          {'text': '比较正常与异常请求的差异，补充范围、数据量及部署版本。', 'evidence': []}],
+                'limitations': ['本回答没有历史案例依据，未执行检查，也未确定根因。']}
+        steps = []
+        for doc in task['documents'][:2]:
+            steps.append({'text': '参考教学案例，先人工核对适用条件，再考虑：' + doc['resolution'],
+                          'evidence': [{'caseId': doc['id'], 'quote': doc['resolution']}]})
+        if scenario == 'bad_reference':
+            steps[0]['evidence'][0]['caseId'] = 'KB-999'
+        elif scenario == 'bad_quote':
+            steps[0]['evidence'][0]['quote'] = '这是一段不存在于原始案例的虚构处理记录。'
+        return {'supported': True, 'summary': '已找到词面相关教学案例，以下只作为排查参考，不代表当前根因。',
+                'steps': steps, 'limitations': ['资料均为教学模拟，请核对实际版本与症状。',
+                                              '引用摘录匹配不等于建议一定适用，不自动执行任何操作。']}
 
     def stream(self, payload, scenario):
         """Send real upstream chunks; the browser does not fake a typing effect."""

@@ -24,7 +24,7 @@ public enum ProcessingError {
     /** 并发已达本地限制。 */
     BUSY(HttpStatus.SERVICE_UNAVAILABLE, "当前请求较多，请稍后重试"),
     /** 上游模型调用失败。 */
-    MODEL_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "模型服务暂不可用，本次未生成草稿"),
+    MODEL_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "模型服务暂不可用，本次处理未完成"),
     /** 鉴权或模型访问权限错误，不自动重试。 */
     MODEL_AUTH_ERROR(HttpStatus.BAD_GATEWAY, "模型服务鉴权失败，请联系维护者检查密钥与权限"),
     /** 明确的余额或配额不足。 */
@@ -34,11 +34,13 @@ public enum ProcessingError {
     /** 参数、模型名称或路由不受支持。 */
     MODEL_REQUEST_REJECTED(HttpStatus.BAD_GATEWAY, "模型请求被拒绝，请联系维护者检查模型与接口配置"),
     /** 网络结果不确定，避免自动重复生成。 */
-    MODEL_NETWORK_ERROR(HttpStatus.BAD_GATEWAY, "连接模型服务失败，本次未取得有效草稿"),
+    MODEL_NETWORK_ERROR(HttpStatus.BAD_GATEWAY, "连接模型服务失败，本次未取得有效结果"),
     /** 上游超时。 */
-    MODEL_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "等待模型响应超时，本次未取得有效草稿"),
+    MODEL_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "等待模型响应超时，本次未取得有效结果"),
     /** 上游返回不完整或无法通过校验的内容。 */
     INVALID_MODEL_OUTPUT(HttpStatus.BAD_GATEWAY, "模型返回内容不符合工单结构，请调整描述后重试"),
+    /** 建议格式或引用不符合本次检索结果。 */
+    INVALID_ADVICE_OUTPUT(HttpStatus.BAD_GATEWAY, "模型建议或引用未通过校验，本次结果已丢弃，请勿据此操作"),
     /** 流结束但缺少模型正常完成标记。 */
     STREAM_INCOMPLETE(HttpStatus.BAD_GATEWAY, "模型响应中断，预览内容未形成有效草稿"),
     /** 未预期的服务错误。 */
