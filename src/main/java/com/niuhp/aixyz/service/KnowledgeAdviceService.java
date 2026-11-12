@@ -6,6 +6,8 @@ import com.niuhp.aixyz.knowledge.AdviceMode;
 import com.niuhp.aixyz.knowledge.AdviceOutputValidator;
 import com.niuhp.aixyz.knowledge.CaseKnowledgeBase;
 import com.niuhp.aixyz.knowledge.CaseMatchDTO;
+import com.niuhp.aixyz.knowledge.RetrievalMethod;
+import com.niuhp.aixyz.knowledge.SemanticCaseIndex;
 import com.niuhp.aixyz.model.AdviceModelResult;
 import com.niuhp.aixyz.model.KnowledgeAdviceGateway;
 import com.niuhp.aixyz.model.ModelConcurrencyLimiter;
@@ -26,12 +28,14 @@ public class KnowledgeAdviceService {
     private static final Logger LOGGER = LoggerFactory.getLogger(KnowledgeAdviceService.class);
     private final CaseKnowledgeBase knowledgeBase;
     private final KnowledgeAdviceGateway gateway;
+    private final SemanticCaseIndex semanticIndex;
     private final AdviceOutputValidator validator;
     private final ModelConcurrencyLimiter limiter;
 
     public KnowledgeAdviceService(CaseKnowledgeBase knowledgeBase, KnowledgeAdviceGateway gateway,
-            AdviceOutputValidator validator, ModelConcurrencyLimiter limiter) {
+            AdviceOutputValidator validator, ModelConcurrencyLimiter limiter, SemanticCaseIndex semanticIndex) {
         this.knowledgeBase = knowledgeBase;
+        this.semanticIndex = semanticIndex;
         this.gateway = gateway;
         this.validator = validator;
         this.limiter = limiter;
@@ -42,17 +46,19 @@ public class KnowledgeAdviceService {
         KnowledgeAdviceResponseDTO response = new KnowledgeAdviceResponseDTO();
         response.setRequestId(requestId);
         response.setMode(request.getMode());
+        boolean semantic = request.getMethod() == RetrievalMethod.SEMANTIC;
         response.setRetrievalMethod(request.getMode() == AdviceMode.RETRIEVAL
-                ? CaseKnowledgeBase.RETRIEVAL_METHOD : "NONE");
+                ? semantic ? SemanticCaseIndex.METHOD : CaseKnowledgeBase.RETRIEVAL_METHOD : "NONE");
         response.setCorpusVersion(CaseKnowledgeBase.CORPUS_VERSION);
-        response.setThreshold(knowledgeBase.getThreshold());
+        response.setThreshold(semantic ? semanticIndex.getThreshold() : knowledgeBase.getThreshold());
         response.setCaseCount(knowledgeBase.size());
         List<CaseMatchDTO> matches = request.getMode() == AdviceMode.RETRIEVAL
-                ? knowledgeBase.search(request.getDescription()) : List.of();
+                ? semantic ? semanticIndex.search(request.getDescription())
+                        : knowledgeBase.search(request.getDescription()) : List.of();
         response.setSources(matches);
         if (request.getMode() == AdviceMode.RETRIEVAL && matches.isEmpty()) {
             response.setStatus("NO_MATCH");
-            response.setMessage("当前词项检索规则和阈值下未找到相关教学案例，未调用生成模型；请补充具体症状或换用通用建议。");
+            response.setMessage("当前检索方式和阈值下未找到相关教学案例，未调用生成模型；请补充具体症状或换用通用建议。");
         } else {
             limiter.acquirePermit();
             try {

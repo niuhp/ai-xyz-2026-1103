@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>同题检索对照 · Java AI 实战⑥</title>
+    <link rel="stylesheet" href="/app.css"><link rel="stylesheet" href="/knowledge.css">
+    <script type="module" src="/retrieval.js"></script>
+</head>
+<body><main class="knowledge-main">
+    <header><span class="badge">JAVA × AI · 实战 06</span><h1>换个说法，还能找到吗？</h1>
+        <p>同一问题、同一批教学案例，分别查看 TF-IDF 与 Embedding 的召回结果。</p>
+        <small id="index-info">正在读取向量索引状态…</small>
+        <p><a href="/knowledge.html">生成带出处的建议</a> · <a href="/">工单草稿</a></p>
+    </header>
+    <section class="panel">
+        <p class="notice" id="retrieval-notice">只比较检索，不调用聊天模型。语义检索会把描述和教学语料发送给独立配置的向量服务；首次使用编码 16 条案例，进程重启后重建。每次查询另有一次向量调用。</p>
+        <label for="retrieval-description">问题描述</label>
+        <textarea id="retrieval-description" rows="4" maxlength="4000" placeholder="使用公开或脱敏的问题描述"></textarea>
+        <div class="examples"><button type="button" data-query="literal">词面相近</button><button type="button" data-query="synonym">换个说法</button><button type="button" data-query="code">精确错误码</button><button type="button" data-query="irrelevant">无关问题</button></div>
+        <div class="actions"><span>分数来自不同模型空间，不能横向比较大小；各自阈值须用业务样本校准。</span><button type="button" id="compare-button">同题检索对照</button></div>
+        <p class="meta">两栏分别保留结果；向量服务失败不会冒充语义检索成功。首次耗时包含语料编码，不能直接当作稳定查询延迟。</p>
+    </section>
+    <section class="comparison" aria-live="polite"><article class="panel" id="lexical-result"><h2>TF-IDF · 词项检索</h2><p>等待对照。</p></article><article class="panel" id="semantic-result"><h2>Embedding · 语义检索</h2><p>等待对照。</p></article></section>
+    <p id="compare-meta" class="meta"></p>
+    <footer>教学语料规模很小；命中不等于根因已确认，引用真实也不保证建议适用。完整评估还需要人工标注及独立测试集。</footer>
+</main></body></html>

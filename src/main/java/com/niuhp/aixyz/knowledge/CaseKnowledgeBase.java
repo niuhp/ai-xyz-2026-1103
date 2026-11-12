@@ -29,7 +29,7 @@ public class CaseKnowledgeBase {
 
     public static final String CORPUS_VERSION = "teaching-20261111-v1";
     public static final String RETRIEVAL_METHOD = "LOCAL_TFIDF_COSINE";
-    private static final Pattern TERMS = Pattern.compile("[\\p{IsHan}]+|[a-z0-9_]+");
+    private static final Pattern TERMS = Pattern.compile("\\p{IsHan}+|[a-z0-9_]+");
     private static final Pattern CASE_ID = Pattern.compile("KB-\\d{3}");
     private static final Set<String> STOP_TERMS = Set.of("系统", "问题", "出现", "希望", "现在", "教学", "正常");
     private static final int MAX_RESULTS = 3;
@@ -81,6 +81,10 @@ public class CaseKnowledgeBase {
         }
         return matches.stream().sorted(Comparator.comparingDouble(CaseMatchDTO::getScore).reversed()
                 .thenComparing(match -> match.getDocument().getId())).limit(MAX_RESULTS).toList();
+    }
+
+    public List<KnowledgeCaseDTO> getDocuments() {
+        return documents;
     }
 
     public int size() {

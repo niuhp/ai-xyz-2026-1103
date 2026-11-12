@@ -20,6 +20,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         payload = json.loads(self.rfile.read(int(self.headers.get('Content-Length', '0'))))
+        if self.path == '/v1/embeddings':
+            self.embeddings(payload)
+            return
         content = payload.get('messages', [{}])[-1].get('content', '')
         task = None
         try:
@@ -75,6 +78,26 @@ class Handler(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass
 
+    def embeddings(self, payload):
+        """Fixed artificial vectors for protocol tests; NOT a semantic model."""
+        inputs = payload.get('input', [])
+        inputs = [inputs] if isinstance(inputs, str) else inputs
+        data = []
+        for index, text in enumerate(inputs):
+            vector = [0.0] * 16
+            vector[index if len(inputs) > 1 else 0] = 1.0
+            data.append({'object': 'embedding', 'index': index, 'embedding': vector})
+        body = {'object': 'list', 'model': 'local-fixed-vector-protocol-only',
+                'data': list(reversed(data)), 'usage': {'prompt_tokens': 0, 'total_tokens': 0}}
+        encoded = json.dumps(body).encode()
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-Length', str(len(encoded)))
+        self.send_header('Connection', 'close')
+        self.close_connection = True
+        self.end_headers()
+        self.wfile.write(encoded)
+
     def advice(self, task, scenario):
         if scenario == 'insufficient':
             return {'supported': False, 'summary': '资料不足，暂不提出具体处理建议。', 'steps': [],
@@ -92,7 +115,7 @@ class Handler(BaseHTTPRequestHandler):
             steps[0]['evidence'][0]['caseId'] = 'KB-999'
         elif scenario == 'bad_quote':
             steps[0]['evidence'][0]['quote'] = '这是一段不存在于原始案例的虚构处理记录。'
-        return {'supported': True, 'summary': '已找到词面相关教学案例，以下只作为排查参考，不代表当前根因。',
+        return {'supported': True, 'summary': '已召回教学案例，以下只作为排查参考，不代表当前根因。',
                 'steps': steps, 'limitations': ['资料均为教学模拟，请核对实际版本与症状。',
                                               '引用摘录匹配不等于建议一定适用，不自动执行任何操作。']}
 

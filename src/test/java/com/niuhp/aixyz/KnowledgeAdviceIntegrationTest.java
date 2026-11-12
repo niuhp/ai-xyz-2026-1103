@@ -56,6 +56,7 @@ class KnowledgeAdviceIntegrationTest {
     private static final String FAULT_UNKNOWN_FIELD = "unknown_field";
     private static final String FAULT_BAD_TYPE = "bad_type";
     private static final String BLANK_DESCRIPTION = " ";
+    private static final String TOO_LONG_DESCRIPTION = "字".repeat(4001);
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final String QUESTION = "导出 Excel 选择全年数据等待很久提示超时，缩小日期范围后正常";
     private static final AtomicInteger CALLS = new AtomicInteger();
@@ -161,7 +162,7 @@ class KnowledgeAdviceIntegrationTest {
     @Test
     void shouldValidateInputBeforeUpstreamAndMapFailureWithoutLeakingIt() throws Exception {
         for (Map<String, Object> invalid : List.<Map<String, Object>>of(Map.of(FIELD_DESCRIPTION, BLANK_DESCRIPTION, FIELD_MODE, MODE_RETRIEVAL),
-            Map.of(FIELD_DESCRIPTION, "字".repeat(4001), FIELD_MODE, MODE_RETRIEVAL), Map.of(FIELD_DESCRIPTION, QUESTION),
+            Map.of(FIELD_DESCRIPTION, TOO_LONG_DESCRIPTION, FIELD_MODE, MODE_RETRIEVAL), Map.of(FIELD_DESCRIPTION, QUESTION),
             Map.of(FIELD_DESCRIPTION, QUESTION, FIELD_MODE, "OTHER"), Map.of(FIELD_DESCRIPTION, 12, FIELD_MODE, MODE_RETRIEVAL))) {
             assertThat(post(invalid).statusCode()).isEqualTo(400);
         }
@@ -201,6 +202,29 @@ class KnowledgeAdviceIntegrationTest {
         assertThat(post(Map.of(FIELD_DESCRIPTION, QUESTION, FIELD_MODE, MODE_RETRIEVAL)).statusCode())
                 .isEqualTo(200);
         assertThat(CALLS.get()).isEqualTo(1);
+        assertNoWrites();
+    }
+
+    @Test
+    void shouldExposeDisabledSemanticPathAndValidateCompareInputWithoutModelCalls() throws Exception {
+        String path = "/api/v1/knowledge/compare";
+        HttpResponse<String> compared = post(path, Map.of(FIELD_DESCRIPTION, QUESTION));
+        assertThat(compared.statusCode()).isEqualTo(200);
+        JsonNode result = JSON.readTree(compared.body());
+        assertThat(result.path("lexical").path("matches").size()).isPositive();
+        assertThat(result.path("semantic").path("status").asString()).isEqualTo("EMBEDDING_DISABLED");
+        assertThat(result.path("semantic").path("matches").size()).isZero();
+        assertThat(result.path("semanticIndex").path("state").asString()).isEqualTo("DISABLED");
+        for (String input : List.of(BLANK_DESCRIPTION, TOO_LONG_DESCRIPTION)) {
+            assertThat(post(path, Map.of(FIELD_DESCRIPTION, input)).statusCode()).isEqualTo(400);
+        }
+        HttpResponse<String> unavailable = post(Map.of(FIELD_DESCRIPTION, QUESTION,
+                FIELD_MODE, MODE_RETRIEVAL, "method", "SEMANTIC"));
+        assertThat(unavailable.statusCode()).isEqualTo(503);
+        assertThat(unavailable.body()).contains("EMBEDDING_DISABLED");
+        assertThat(post(Map.of(FIELD_DESCRIPTION, QUESTION, FIELD_MODE, MODE_RETRIEVAL,
+                "method", "UNKNOWN")).statusCode()).isEqualTo(400);
+        assertThat(CALLS.get()).isZero();
         assertNoWrites();
     }
 

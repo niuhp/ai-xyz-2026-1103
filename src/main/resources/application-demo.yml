@@ -10,6 +10,15 @@ spring:
 server:
   port: 8082
 app:
+  knowledge:
+    embedding:
+      enabled: true
+      base-url: http://127.0.0.1:${DEMO_UPSTREAM_PORT:18083}/v1
+      api-key: local-demo-placeholder
+      model: local-fixed-vector-protocol-only
+      query-prefix: ""
+      document-prefix: ""
+      threshold: 0.55
   ticket:
     model-max-retries: 1
     stream-timeout: 12s

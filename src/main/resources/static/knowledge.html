@@ -15,7 +15,7 @@
         <h1>建议有出处，排查有依据</h1>
         <p>先检索历史案例，再生成参考建议。每条建议展示来源与原文，帮助人工核实。</p>
         <small id="knowledge-info">正在加载知识库信息…</small>
-        <p><a href="/">返回工单草稿 · 普通 / SSE 生成</a></p>
+        <p><a href="/">返回工单草稿 · 普通 / SSE 生成</a> · <a href="/retrieval.html">实战⑥：同题检索对照</a></p>
     </header>
     <section class="panel">
         <p class="notice">本页使用教学模拟案例。相似案例不代表当前根因；建议不会创建工单或自动执行操作。</p>
@@ -30,6 +30,8 @@
                 <option value="rate_limit">429 请求受限</option>
             </select>
         </div>
+        <label for="retrieval-method">检索方式（参考模式生效）</label>
+        <select id="retrieval-method"><option value="TFIDF">TF-IDF 词项检索</option><option value="SEMANTIC">Embedding 语义检索（需单独配置）</option></select>
         <label for="knowledge-description">问题描述</label>
         <textarea id="knowledge-description" maxlength="4000" rows="5" placeholder="描述具体症状、触发条件、系统及版本，请使用公开或脱敏内容。"></textarea>
         <div class="examples">
@@ -38,17 +40,17 @@
             <button type="button" data-knowledge-example="no_match">库中无相关案例</button>
         </div>
         <div class="actions">
-            <span id="knowledge-disclosure">参考模式会将描述和召回的教学案例发送给配置的模型；对照模式只发送描述。</span>
+            <span id="knowledge-disclosure">参考模式会将描述和召回的教学案例发送给配置的模型；对照模式只发送描述；语义检索还会将描述和教学语料发送给独立向量服务。</span>
             <button id="knowledge-baseline" type="button">不查知识库 · 通用建议</button>
             <button id="knowledge-retrieval" type="button">检索案例 · 生成建议</button>
         </div>
-        <p class="meta">两种模式需分别点击，会分别产生模型调用；未命中时参考模式不调用生成模型。输入改变会清空旧结果。</p>
+        <p class="meta">两种模式需分别点击，会分别产生模型调用。语义检索另有向量调用；未命中时不调用生成模型。输入改变会清空旧结果。</p>
     </section>
     <section class="comparison" aria-label="两种模式结果对照">
         <article id="baseline-result" class="panel" aria-live="polite"><h2>不查知识库</h2><p>点击“通用建议”，观察没有案例资料时的回答。</p></article>
         <article id="retrieval-result" class="panel" aria-live="polite"><h2>检索后生成</h2><p>点击“检索案例”，查看建议、引用及原始案例。</p></article>
     </section>
-    <footer>TF-IDF 词项向量＋余弦检索，按词面相似度召回；分数不是置信度。引用校验不能代替语义核实。</footer>
+    <footer>TF-IDF 与 Embedding 使用独立阈值，分数不能横向比较，也不是置信度。引用校验不能代替语义核实。</footer>
 </main>
 </body>
 </html>

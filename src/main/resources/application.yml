@@ -43,6 +43,15 @@ management:
 app:
   knowledge:
     similarity-threshold: ${KNOWLEDGE_THRESHOLD:0.16}
+    embedding:
+      enabled: ${EMBEDDING_ENABLED:false}
+      base-url: ${EMBEDDING_BASE_URL:}
+      api-key: ${EMBEDDING_API_KEY:}
+      model: ${EMBEDDING_MODEL:}
+      timeout: ${EMBEDDING_TIMEOUT:15s}
+      threshold: ${EMBEDDING_THRESHOLD:0.55}
+      query-prefix: ${EMBEDDING_QUERY_PREFIX:}
+      document-prefix: ${EMBEDDING_DOCUMENT_PREFIX:}
   ticket:
     platform-name: ai-xyz-2026-1103
     max-concurrent-requests: 2

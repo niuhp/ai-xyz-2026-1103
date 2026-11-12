@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 /**
- * 普通生成、SSE 与知识库建议共享的单实例模型并发额度。
+ * 普通生成、SSE、知识库建议与向量调用共享的单实例模型并发额度。
  * 取得额度的调用方负责在处理真正结束后释放；满额立即拒绝，不排队。
  *
  * @author niuhaipeng

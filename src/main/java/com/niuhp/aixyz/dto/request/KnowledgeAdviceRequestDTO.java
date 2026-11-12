@@ -1,6 +1,7 @@
 package com.niuhp.aixyz.dto.request;
 
 import com.niuhp.aixyz.knowledge.AdviceMode;
+import com.niuhp.aixyz.knowledge.RetrievalMethod;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -18,6 +19,17 @@ public class KnowledgeAdviceRequestDTO {
 
     @NotNull
     private AdviceMode mode;
+
+    /** 省略时由服务层使用 TFIDF，兼容第五篇请求。 */
+    private RetrievalMethod method;
+
+    public RetrievalMethod getMethod() {
+        return method;
+    }
+
+    public void setMethod(RetrievalMethod method) {
+        this.method = method;
+    }
 
     public String getDescription() {
         return description;

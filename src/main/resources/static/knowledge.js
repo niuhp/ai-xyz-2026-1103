@@ -24,6 +24,7 @@ function reset() {
 }
 input.addEventListener("input", () => { input.setCustomValidity(""); reset(); });
 document.querySelector("#knowledge-scenario").addEventListener("change", reset);
+document.querySelector("#retrieval-method").addEventListener("change", reset);
 document.querySelectorAll("[data-knowledge-example]").forEach(button => {
     button.addEventListener("click", () => { input.value = examples[button.dataset.knowledgeExample]; input.setCustomValidity(""); reset(); });
 });
@@ -31,13 +32,13 @@ fetch("/api/v1/knowledge").then(response => {
     if (!response.ok) throw new Error();
     return response.json();
 }).then(info => {
-    document.querySelector("#knowledge-info").textContent = info.caseCount + " 条教学案例 · 本地 TF-IDF 词项检索 · 语料 " + info.corpusVersion;
+    document.querySelector("#knowledge-info").textContent = info.caseCount + " 条教学案例 · 支持词项 / 语义检索（需配置） · 语料 " + info.corpusVersion;
 }).catch(() => { document.querySelector("#knowledge-info").textContent = "知识库信息暂时无法加载，请检查服务。"; });
-if (new URLSearchParams(location.search).get("demo") === "1") {
+{
     fetch("/api/v1/demo").then(response => response.ok ? response.json() : null).then(info => {
         demo = info?.enabled === true;
         document.querySelector("#knowledge-demo").hidden = !demo;
-        if (demo) document.querySelector("#knowledge-disclosure").textContent = "描述与案例只发送给本机模拟服务，不消耗真实模型额度；回答为固定演示数据。";
+        if (demo) document.querySelector("#knowledge-disclosure").textContent = "描述与案例只发送给本机模拟服务；向量为人工固定数组，回答为固定演示数据，只验证链路，不代表语义效果。";
     }).catch(() => {});
 }
 input.value = examples.export;
@@ -61,7 +62,7 @@ async function generate(mode) {
         const marker = demo ? "[demo:" + document.querySelector("#knowledge-scenario").value + ":" + crypto.randomUUID() + "] " : "";
         const response = await fetch("/api/v1/knowledge/advice", {
             method: "POST", headers: {"Content-Type": "application/json"}, signal: controller.signal,
-            body: JSON.stringify({description: marker + description, mode})
+            body: JSON.stringify({description: marker + description, mode, method: document.querySelector("#retrieval-method").value})
         });
         const result = await response.json();
         if (current !== generation) return;
@@ -72,7 +73,7 @@ async function generate(mode) {
             renderAdvice(panel, result);
         }
         panel.append(element("p", "请求编号 " + (result.requestId || "未知") + " · " + (result.status || result.code || "未知状态")
-            + (response.ok ? " · " + result.elapsedMillis + " ms" : ""), "meta"));
+            + (response.ok ? " · " + result.retrievalMethod + " · " + result.elapsedMillis + " ms" : ""), "meta"));
         const details = element("details", "");
         details.append(element("summary", "查看接口 JSON"), element("pre", JSON.stringify(result, null, 2)));
         panel.append(details);
@@ -103,7 +104,7 @@ function renderAdvice(panel, result) {
         for (const source of result.sources) {
             const doc = source.document;
             const details = element("details", "", "case-content");
-            details.append(element("summary", "[" + doc.id + "] " + doc.title + " · 词项相似度 " + source.score.toFixed(3)));
+            details.append(element("summary", "[" + doc.id + "] " + doc.title + " · 相似度 " + source.score.toFixed(3)));
             details.append(element("p", "教学模拟 · " + doc.system + " / " + doc.module + " · " + doc.version + " · " + doc.updatedAt));
             details.append(element("p", "症状：" + doc.symptoms), element("p", "处理记录：" + doc.resolution), element("p", "适用范围：" + doc.applicability));
             panel.append(details);
