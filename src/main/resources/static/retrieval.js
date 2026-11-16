@@ -1,7 +1,7 @@
 const input = document.querySelector("#retrieval-description");
 const button = document.querySelector("#compare-button");
-const panels = {lexical: document.querySelector("#lexical-result"), semantic: document.querySelector("#semantic-result")};
-const titles = {lexical: "TF-IDF · 词项检索", semantic: "Embedding · 语义检索"};
+const panels = {lexical: document.querySelector("#lexical-result"), semantic: document.querySelector("#semantic-result"), hybrid: document.querySelector("#hybrid-result")};
+const titles = {lexical: "TF-IDF · 词项检索", semantic: "Embedding · 语义检索", hybrid: "RRF · 混合检索"};
 const examples = {
     literal: "导出 Excel 选择全年数据等待很久提示超时，缩小日期范围后正常",
     synonym: "想把整年的报表下载到电脑，一直转圈拿不到文件；只选一周就能拿到。",
@@ -59,13 +59,19 @@ button.addEventListener("click", async () => {
     } finally { controller = null; button.disabled = false; }
 });
 function render(panel, title, result) {
-    panel.replaceChildren(node("h2", title), node("p", result.message), node("p", result.status + " · 阈值 " + result.threshold + " · " + result.elapsedMillis + " ms"));
+    const hybrid = result.method === "HYBRID_RRF";
+    panel.replaceChildren(node("h2", title), node("p", result.message), node("p", result.status
+        + (hybrid ? " · k=" + result.rrfK + " · 含两路检索与融合 " : " · 阈值 " + result.threshold + " · ") + result.elapsedMillis + " ms"));
+    if (hybrid) panel.append(node("p", "词项 " + result.lexicalStatus + " / 语义 " + result.semanticStatus));
     for (const match of result.matches) {
         const doc = match.document;
         const details = node("details", "");
         details.open = true;
-        details.append(node("summary", "[" + doc.id + "] " + doc.title + " · 相似度 " + match.score.toFixed(3)),
+        details.append(node("summary", "[" + doc.id + "] " + doc.title + (hybrid ? " · RRF " + match.score.toFixed(5) : " · 相似度 " + match.score.toFixed(3))),
             node("p", "症状：" + doc.symptoms), node("p", "适用范围：" + doc.applicability));
+        if (hybrid) details.append(node("p", "词项名次 " + (match.lexicalRank ?? "未召回")
+            + " / 语义名次 " + (match.semanticRank ?? "未召回")), node("p", "原始分数：词项 "
+            + (match.lexicalScore?.toFixed(3) ?? "—") + " / 语义 " + (match.semanticScore?.toFixed(3) ?? "—")));
         panel.append(details);
     }
     const raw = node("details", ""); raw.append(node("summary", "查看检索 JSON"), node("pre", JSON.stringify(result, null, 2))); panel.append(raw);

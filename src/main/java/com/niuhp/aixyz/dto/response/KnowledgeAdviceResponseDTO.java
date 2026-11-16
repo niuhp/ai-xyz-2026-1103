@@ -38,6 +38,26 @@ public class KnowledgeAdviceResponseDTO {
 
     private Long elapsedMillis;
 
+    private String retrievalStatus;
+
+    public String getRetrievalStatus() {
+        return retrievalStatus;
+    }
+
+    public void setRetrievalStatus(String retrievalStatus) {
+        this.retrievalStatus = retrievalStatus;
+    }
+
+    private String retrievalMessage;
+
+    public String getRetrievalMessage() {
+        return retrievalMessage;
+    }
+
+    public void setRetrievalMessage(String retrievalMessage) {
+        this.retrievalMessage = retrievalMessage;
+    }
+
     public String getRequestId() {
         return requestId;
     }

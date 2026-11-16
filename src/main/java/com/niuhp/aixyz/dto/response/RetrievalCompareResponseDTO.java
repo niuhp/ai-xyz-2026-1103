@@ -3,7 +3,7 @@ package com.niuhp.aixyz.dto.response;
 import java.util.Map;
 
 /**
- * 同一语料、同一问题的两种检索结果。
+ * 同一语料、同一问题的两路召回与融合结果。
  *
  * @author niuhaipeng
  */
@@ -18,6 +18,16 @@ public class RetrievalCompareResponseDTO {
     private RetrievalResultDTO semantic;
 
     private Map<String, Object> semanticIndex;
+
+    private RetrievalResultDTO hybrid;
+
+    public RetrievalResultDTO getHybrid() {
+        return hybrid;
+    }
+
+    public void setHybrid(RetrievalResultDTO hybrid) {
+        this.hybrid = hybrid;
+    }
 
     public String getRequestId() {
         return requestId;

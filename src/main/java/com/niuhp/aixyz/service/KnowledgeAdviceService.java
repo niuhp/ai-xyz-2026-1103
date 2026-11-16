@@ -2,6 +2,8 @@ package com.niuhp.aixyz.service;
 
 import com.niuhp.aixyz.dto.request.KnowledgeAdviceRequestDTO;
 import com.niuhp.aixyz.dto.response.KnowledgeAdviceResponseDTO;
+import com.niuhp.aixyz.dto.response.RetrievalResultDTO;
+import com.niuhp.aixyz.knowledge.ReciprocalRankFusion;
 import com.niuhp.aixyz.knowledge.AdviceMode;
 import com.niuhp.aixyz.knowledge.AdviceOutputValidator;
 import com.niuhp.aixyz.knowledge.CaseKnowledgeBase;
@@ -29,13 +31,16 @@ public class KnowledgeAdviceService {
     private final CaseKnowledgeBase knowledgeBase;
     private final KnowledgeAdviceGateway gateway;
     private final SemanticCaseIndex semanticIndex;
+    private final RetrievalCompareService comparison;
     private final AdviceOutputValidator validator;
     private final ModelConcurrencyLimiter limiter;
 
     public KnowledgeAdviceService(CaseKnowledgeBase knowledgeBase, KnowledgeAdviceGateway gateway,
-            AdviceOutputValidator validator, ModelConcurrencyLimiter limiter, SemanticCaseIndex semanticIndex) {
+            AdviceOutputValidator validator, ModelConcurrencyLimiter limiter, SemanticCaseIndex semanticIndex,
+            RetrievalCompareService comparison) {
         this.knowledgeBase = knowledgeBase;
         this.semanticIndex = semanticIndex;
+        this.comparison = comparison;
         this.gateway = gateway;
         this.validator = validator;
         this.limiter = limiter;
@@ -47,18 +52,27 @@ public class KnowledgeAdviceService {
         response.setRequestId(requestId);
         response.setMode(request.getMode());
         boolean semantic = request.getMethod() == RetrievalMethod.SEMANTIC;
+        boolean hybrid = request.getMethod() == RetrievalMethod.HYBRID;
+        RetrievalResultDTO combined = hybrid && request.getMode() == AdviceMode.RETRIEVAL
+                ? comparison.compare(request.getDescription(), requestId).getHybrid() : null;
         response.setRetrievalMethod(request.getMode() == AdviceMode.RETRIEVAL
-                ? semantic ? SemanticCaseIndex.METHOD : CaseKnowledgeBase.RETRIEVAL_METHOD : "NONE");
+                ? hybrid ? ReciprocalRankFusion.METHOD
+                        : semantic ? SemanticCaseIndex.METHOD : CaseKnowledgeBase.RETRIEVAL_METHOD : "NONE");
         response.setCorpusVersion(CaseKnowledgeBase.CORPUS_VERSION);
-        response.setThreshold(semantic ? semanticIndex.getThreshold() : knowledgeBase.getThreshold());
+        response.setThreshold(hybrid ? null : semantic ? semanticIndex.getThreshold() : knowledgeBase.getThreshold());
+        response.setRetrievalStatus(combined == null ? "NOT_APPLICABLE" : combined.getStatus());
+        response.setRetrievalMessage(combined == null ? "" : combined.getMessage());
         response.setCaseCount(knowledgeBase.size());
         List<CaseMatchDTO> matches = request.getMode() == AdviceMode.RETRIEVAL
-                ? semantic ? semanticIndex.search(request.getDescription())
+                ? combined != null ? combined.getMatches() : semantic ? semanticIndex.search(request.getDescription())
                         : knowledgeBase.search(request.getDescription()) : List.of();
         response.setSources(matches);
         if (request.getMode() == AdviceMode.RETRIEVAL && matches.isEmpty()) {
-            response.setStatus("NO_MATCH");
-            response.setMessage("当前检索方式和阈值下未找到相关教学案例，未调用生成模型；请补充具体症状或换用通用建议。");
+            response.setStatus(combined != null && "DEGRADED".equals(combined.getStatus())
+                    ? "RETRIEVAL_UNAVAILABLE" : "NO_MATCH");
+            response.setMessage(combined != null && "DEGRADED".equals(combined.getStatus())
+                    ? "检索已降级且没有可用候选，无法确认完整无匹配；未调用生成模型。"
+                    : "当前检索方式和阈值下未找到相关教学案例，未调用生成模型；请补充具体症状或换用通用建议。");
         } else {
             limiter.acquirePermit();
             try {

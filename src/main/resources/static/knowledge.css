@@ -16,3 +16,7 @@ a { color: #245bd3; text-underline-offset: 3px; }
 .knowledge-main .actions { flex-wrap: wrap; }
 .knowledge-main .actions span { max-width: 100%; flex: 1 1 300px; }
 @media (max-width: 800px) { .comparison { grid-template-columns: 1fr; } }
+
+.retrieval-comparison { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.retrieval-comparison h2 { font-size: 19px; }
+@media (max-width: 1000px) { .retrieval-comparison { grid-template-columns: 1fr; } }

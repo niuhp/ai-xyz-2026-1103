@@ -85,6 +85,9 @@ async function generate(mode) {
     }
 }
 function renderAdvice(panel, result) {
+    if (result.retrievalStatus === "DEGRADED" || result.status === "RETRIEVAL_UNAVAILABLE") {
+        panel.append(element("p", result.retrievalMessage, "notice"));
+    }
     const advice = result.advice;
     if (advice) {
         panel.append(element("h3", "排查方向"), element("p", advice.summary));
@@ -104,7 +107,7 @@ function renderAdvice(panel, result) {
         for (const source of result.sources) {
             const doc = source.document;
             const details = element("details", "", "case-content");
-            details.append(element("summary", "[" + doc.id + "] " + doc.title + " · 相似度 " + source.score.toFixed(3)));
+            details.append(element("summary", "[" + doc.id + "] " + doc.title + (result.retrievalMethod === "HYBRID_RRF" ? " · RRF " + source.score.toFixed(5) : " · 相似度 " + source.score.toFixed(3))));
             details.append(element("p", "教学模拟 · " + doc.system + " / " + doc.module + " · " + doc.version + " · " + doc.updatedAt));
             details.append(element("p", "症状：" + doc.symptoms), element("p", "处理记录：" + doc.resolution), element("p", "适用范围：" + doc.applicability));
             panel.append(details);

@@ -12,6 +12,46 @@ public class CaseMatchDTO {
 
     private Double score;
 
+    private Integer lexicalRank;
+
+    public Integer getLexicalRank() {
+        return lexicalRank;
+    }
+
+    public void setLexicalRank(Integer lexicalRank) {
+        this.lexicalRank = lexicalRank;
+    }
+
+    private Integer semanticRank;
+
+    public Integer getSemanticRank() {
+        return semanticRank;
+    }
+
+    public void setSemanticRank(Integer semanticRank) {
+        this.semanticRank = semanticRank;
+    }
+
+    private Double lexicalScore;
+
+    public Double getLexicalScore() {
+        return lexicalScore;
+    }
+
+    public void setLexicalScore(Double lexicalScore) {
+        this.lexicalScore = lexicalScore;
+    }
+
+    private Double semanticScore;
+
+    public Double getSemanticScore() {
+        return semanticScore;
+    }
+
+    public void setSemanticScore(Double semanticScore) {
+        this.semanticScore = semanticScore;
+    }
+
     public KnowledgeCaseDTO getDocument() {
         return document;
     }

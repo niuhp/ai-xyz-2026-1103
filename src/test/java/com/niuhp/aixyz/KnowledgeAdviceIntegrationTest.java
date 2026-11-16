@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author niuhaipeng
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {"spring.config.import=", "spring.ai.openai.api-key=test-key",
+        properties = {"spring.config.import=", "app.knowledge.embedding.enabled=false", "spring.ai.openai.api-key=test-key",
                 "spring.ai.openai.timeout=1s", "app.ticket.model-max-retries=0",
                 "spring.datasource.url=jdbc:h2:mem:knowledgetest;DB_CLOSE_DELAY=-1"})
 class KnowledgeAdviceIntegrationTest {
@@ -225,6 +225,27 @@ class KnowledgeAdviceIntegrationTest {
         assertThat(post(Map.of(FIELD_DESCRIPTION, QUESTION, FIELD_MODE, MODE_RETRIEVAL,
                 "method", "UNKNOWN")).statusCode()).isEqualTo(400);
         assertThat(CALLS.get()).isZero();
+        assertNoWrites();
+    }
+
+    @Test
+    void shouldExposeHybridDegradationAndKeepCitationValidation() throws Exception {
+        var payload = Map.of(FIELD_DESCRIPTION, QUESTION, FIELD_MODE, MODE_RETRIEVAL, "method", "HYBRID");
+        JsonNode result = JSON.readTree(post(payload).body());
+        assertThat(result.path("status").asString()).isEqualTo("REFERENCE");
+        assertThat(result.path("retrievalStatus").asString()).isEqualTo("DEGRADED");
+        assertThat(result.path("retrievalMethod").asString()).isEqualTo("HYBRID_RRF");
+        assertThat(result.path("threshold").isNull()).isTrue();
+        assertThat(result.path("sources").get(0).path("lexicalRank").asInt()).isEqualTo(1);
+        assertThat(result.path("sources").get(0).path("semanticRank").isNull()).isTrue();
+        FAULT.set("unknown");
+        assertThat(post(payload).statusCode()).isEqualTo(502);
+        int calls = CALLS.get();
+        JsonNode absent = JSON.readTree(post(Map.of(FIELD_DESCRIPTION, "量子纠缠与光子偏振实验",
+                FIELD_MODE, MODE_RETRIEVAL, "method", "HYBRID")).body());
+        assertThat(absent.path("status").asString()).isEqualTo("RETRIEVAL_UNAVAILABLE");
+        assertThat(absent.path("retrievalStatus").asString()).isEqualTo("DEGRADED");
+        assertThat(CALLS.get()).isEqualTo(calls);
         assertNoWrites();
     }
 

@@ -137,7 +137,8 @@ class SemanticCaseIndexTest {
         SemanticCaseIndex index = index();
         KnowledgeAdviceGateway gateway = mock(KnowledgeAdviceGateway.class);
         KnowledgeAdviceService service = new KnowledgeAdviceService(corpus, gateway,
-                new AdviceOutputValidator(FACTORY.getValidator()), limiter, index);
+                new AdviceOutputValidator(FACTORY.getValidator()), limiter, index,
+                new RetrievalCompareService(corpus, index, new ReciprocalRankFusion()));
         KnowledgeAdviceRequestDTO request = new KnowledgeAdviceRequestDTO();
         request.setDescription("无关问题");
         request.setMode(AdviceMode.RETRIEVAL);
@@ -153,14 +154,14 @@ class SemanticCaseIndexTest {
     @Test
     void shouldKeepLexicalResultsWhenDisabledOrUnavailableWithoutAutomaticReplay() {
         properties.setEnabled(false);
-        var disabled = new RetrievalCompareService(corpus, index()).compare("导出 Excel 选择全年数据提示超时", "test");
+        var disabled = new RetrievalCompareService(corpus, index(), new ReciprocalRankFusion()).compare("导出 Excel 选择全年数据提示超时", "test");
         assertThat(disabled.getLexical().getMatches()).isNotEmpty();
         assertThat(disabled.getSemantic().getStatus()).isEqualTo("EMBEDDING_DISABLED");
         assertThat(CALLS.get()).isZero();
         properties.setEnabled(true);
         STATUS.set(503);
         SemanticCaseIndex failed = index();
-        var response = new RetrievalCompareService(corpus, failed).compare("导出 Excel 选择全年数据提示超时", "test");
+        var response = new RetrievalCompareService(corpus, failed, new ReciprocalRankFusion()).compare("导出 Excel 选择全年数据提示超时", "test");
         assertThat(response.getSemantic().getStatus()).isEqualTo("EMBEDDING_UNAVAILABLE");
         assertThat(response.getSemantic().getMessage()).doesNotContain("private-provider-detail", "test-embedding-key");
         assertThat(CALLS.get()).isEqualTo(1);

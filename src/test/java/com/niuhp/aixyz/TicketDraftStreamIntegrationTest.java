@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author niuhaipeng
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {"spring.config.import=", "spring.ai.openai.api-key=test-key",
+        properties = {"spring.config.import=", "app.knowledge.embedding.enabled=false", "spring.ai.openai.api-key=test-key",
                 "spring.ai.openai.timeout=1s", "app.ticket.stream-timeout=3s",
                 "app.ticket.max-concurrent-requests=1",
                 "spring.datasource.url=jdbc:h2:mem:streamtest;DB_CLOSE_DELAY=-1"})

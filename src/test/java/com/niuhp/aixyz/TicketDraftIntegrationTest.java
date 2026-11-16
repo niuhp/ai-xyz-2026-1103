@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author niuhaipeng
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {"spring.config.import=", "spring.ai.openai.api-key=test-key",
+        properties = {"spring.config.import=", "app.knowledge.embedding.enabled=false", "spring.ai.openai.api-key=test-key",
                 "spring.ai.openai.timeout=1s", "spring.datasource.url=jdbc:h2:mem:tickettest;DB_CLOSE_DELAY=-1"})
 class TicketDraftIntegrationTest {
 

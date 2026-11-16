@@ -22,6 +22,36 @@ public class RetrievalResultDTO {
 
     private Long elapsedMillis;
 
+    private Integer rrfK;
+
+    public Integer getRrfK() {
+        return rrfK;
+    }
+
+    public void setRrfK(Integer rrfK) {
+        this.rrfK = rrfK;
+    }
+
+    private String lexicalStatus;
+
+    public String getLexicalStatus() {
+        return lexicalStatus;
+    }
+
+    public void setLexicalStatus(String lexicalStatus) {
+        this.lexicalStatus = lexicalStatus;
+    }
+
+    private String semanticStatus;
+
+    public String getSemanticStatus() {
+        return semanticStatus;
+    }
+
+    public void setSemanticStatus(String semanticStatus) {
+        this.semanticStatus = semanticStatus;
+    }
+
     public String getMethod() {
         return method;
     }

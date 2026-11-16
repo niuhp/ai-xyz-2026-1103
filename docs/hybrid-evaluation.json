@@ -1,0 +1,449 @@
+{
+  "date": "2026-11-16",
+  "corpus": "teaching-20261111-v1",
+  "model": "qwen3.7-text-embedding",
+  "lexicalThreshold": 0.16,
+  "semanticThreshold": 0.55,
+  "rrfK": 60,
+  "perRouteLimit": 3,
+  "finalLimit": 3,
+  "note": "小型人工教学样本；未调参，非独立统计验收集。不证明普遍质量改善。",
+  "samples": [
+    {
+      "name": "literal",
+      "description": "导出 Excel 选择全年数据等待很久提示超时，缩小日期范围后正常",
+      "expectedTop1": "KB-001",
+      "results": {
+        "lexical": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-001",
+              "score": 0.6806783848350106,
+              "lexicalRank": null,
+              "semanticRank": null
+            }
+          ]
+        },
+        "semantic": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-001",
+              "score": 0.8917848449038797,
+              "lexicalRank": null,
+              "semanticRank": null
+            },
+            {
+              "id": "KB-003",
+              "score": 0.6236248851089653,
+              "lexicalRank": null,
+              "semanticRank": null
+            },
+            {
+              "id": "KB-002",
+              "score": 0.5740576302654897,
+              "lexicalRank": null,
+              "semanticRank": null
+            }
+          ]
+        },
+        "hybrid": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-001",
+              "score": 0.03278688524590164,
+              "lexicalRank": 1,
+              "semanticRank": 1
+            },
+            {
+              "id": "KB-003",
+              "score": 0.016129032258064516,
+              "lexicalRank": null,
+              "semanticRank": 2
+            },
+            {
+              "id": "KB-002",
+              "score": 0.015873015873015872,
+              "lexicalRank": null,
+              "semanticRank": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "synonym",
+      "description": "想把整年的报表下载到电脑，一直转圈拿不到文件；只选一周就能拿到。",
+      "expectedTop1": "KB-001",
+      "results": {
+        "lexical": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-002",
+              "score": 0.19874195983000675,
+              "lexicalRank": null,
+              "semanticRank": null
+            }
+          ]
+        },
+        "semantic": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-001",
+              "score": 0.6712637428610838,
+              "lexicalRank": null,
+              "semanticRank": null
+            },
+            {
+              "id": "KB-003",
+              "score": 0.554484068878123,
+              "lexicalRank": null,
+              "semanticRank": null
+            }
+          ]
+        },
+        "hybrid": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-001",
+              "score": 0.01639344262295082,
+              "lexicalRank": null,
+              "semanticRank": 1
+            },
+            {
+              "id": "KB-002",
+              "score": 0.01639344262295082,
+              "lexicalRank": 1,
+              "semanticRank": null
+            },
+            {
+              "id": "KB-003",
+              "score": 0.016129032258064516,
+              "lexicalRank": null,
+              "semanticRank": 2
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "code",
+      "description": "登录成功后访问业务接口立即返回 401",
+      "expectedTop1": "KB-006",
+      "results": {
+        "lexical": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-006",
+              "score": 0.8186467167012986,
+              "lexicalRank": null,
+              "semanticRank": null
+            }
+          ]
+        },
+        "semantic": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-006",
+              "score": 0.9320798393601891,
+              "lexicalRank": null,
+              "semanticRank": null
+            }
+          ]
+        },
+        "hybrid": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-006",
+              "score": 0.03278688524590164,
+              "lexicalRank": 1,
+              "semanticRank": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "confusable",
+      "description": "导出的 Excel 有表头，但页面列表有值的几列在文件里全是空白。",
+      "expectedTop1": "KB-002",
+      "results": {
+        "lexical": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-002",
+              "score": 0.549230436794141,
+              "lexicalRank": null,
+              "semanticRank": null
+            }
+          ]
+        },
+        "semantic": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-002",
+              "score": 0.9025162381986914,
+              "lexicalRank": null,
+              "semanticRank": null
+            }
+          ]
+        },
+        "hybrid": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-002",
+              "score": 0.03278688524590164,
+              "lexicalRank": 1,
+              "semanticRank": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "irrelevant",
+      "description": "量子纠缠实验的光子偏振发生变化，如何调整光学仪器？",
+      "expectedTop1": null,
+      "results": {
+        "lexical": {
+          "status": "NO_MATCH",
+          "candidates": []
+        },
+        "semantic": {
+          "status": "NO_MATCH",
+          "candidates": []
+        },
+        "hybrid": {
+          "status": "NO_MATCH",
+          "candidates": []
+        }
+      }
+    },
+    {
+      "name": "poem",
+      "description": "请写一首描绘春天的诗。",
+      "expectedTop1": null,
+      "results": {
+        "lexical": {
+          "status": "NO_MATCH",
+          "candidates": []
+        },
+        "semantic": {
+          "status": "NO_MATCH",
+          "candidates": []
+        },
+        "hybrid": {
+          "status": "NO_MATCH",
+          "candidates": []
+        }
+      }
+    },
+    {
+      "name": "new_upload",
+      "description": "上传较大附件返回 413，小文件上传正常",
+      "expectedTop1": "KB-007",
+      "results": {
+        "lexical": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-007",
+              "score": 0.7758086181477121,
+              "lexicalRank": null,
+              "semanticRank": null
+            }
+          ]
+        },
+        "semantic": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-007",
+              "score": 0.9442282931834907,
+              "lexicalRank": null,
+              "semanticRank": null
+            }
+          ]
+        },
+        "hybrid": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-007",
+              "score": 0.03278688524590164,
+              "lexicalRank": 1,
+              "semanticRank": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "new_permission",
+      "description": "管理员给角色加了操作按钮的权限，但同事重新看页面还是找不到那个按钮。",
+      "expectedTop1": "KB-005",
+      "results": {
+        "lexical": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-005",
+              "score": 0.6182590782898307,
+              "lexicalRank": null,
+              "semanticRank": null
+            }
+          ]
+        },
+        "semantic": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-005",
+              "score": 0.8838114216279471,
+              "lexicalRank": null,
+              "semanticRank": null
+            }
+          ]
+        },
+        "hybrid": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-005",
+              "score": 0.03278688524590164,
+              "lexicalRank": 1,
+              "semanticRank": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "new_duplicate",
+      "description": "部署成多台服务后，同一个定时任务在一分钟里跑了好几遍。",
+      "expectedTop1": "KB-011",
+      "results": {
+        "lexical": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-011",
+              "score": 0.4401095587787758,
+              "lexicalRank": null,
+              "semanticRank": null
+            }
+          ]
+        },
+        "semantic": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-011",
+              "score": 0.9019089421185205,
+              "lexicalRank": null,
+              "semanticRank": null
+            },
+            {
+              "id": "KB-012",
+              "score": 0.6317528595437019,
+              "lexicalRank": null,
+              "semanticRank": null
+            },
+            {
+              "id": "KB-016",
+              "score": 0.6009778044104093,
+              "lexicalRank": null,
+              "semanticRank": null
+            }
+          ]
+        },
+        "hybrid": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-011",
+              "score": 0.03278688524590164,
+              "lexicalRank": 1,
+              "semanticRank": 1
+            },
+            {
+              "id": "KB-012",
+              "score": 0.016129032258064516,
+              "lexicalRank": null,
+              "semanticRank": 2
+            },
+            {
+              "id": "KB-016",
+              "score": 0.015873015873015872,
+              "lexicalRank": null,
+              "semanticRank": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "new_gateway",
+      "description": "导出约三十秒返回 504，但应用日志显示任务稍后完成。",
+      "expectedTop1": "KB-003",
+      "results": {
+        "lexical": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-003",
+              "score": 0.7373815705537774,
+              "lexicalRank": null,
+              "semanticRank": null
+            }
+          ]
+        },
+        "semantic": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-003",
+              "score": 0.8467497502390516,
+              "lexicalRank": null,
+              "semanticRank": null
+            },
+            {
+              "id": "KB-001",
+              "score": 0.5548359371519406,
+              "lexicalRank": null,
+              "semanticRank": null
+            }
+          ]
+        },
+        "hybrid": {
+          "status": "MATCHED",
+          "candidates": [
+            {
+              "id": "KB-003",
+              "score": 0.03278688524590164,
+              "lexicalRank": 1,
+              "semanticRank": 1
+            },
+            {
+              "id": "KB-001",
+              "score": 0.016129032258064516,
+              "lexicalRank": null,
+              "semanticRank": 2
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
