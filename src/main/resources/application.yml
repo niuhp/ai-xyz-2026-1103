@@ -42,6 +42,7 @@ management:
       show-details: never
 app:
   knowledge:
+    rerank-timeout: ${RERANK_TIMEOUT:8s}
     similarity-threshold: ${KNOWLEDGE_THRESHOLD:0.16}
     embedding:
       enabled: ${EMBEDDING_ENABLED:false}

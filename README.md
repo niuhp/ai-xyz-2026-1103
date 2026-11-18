@@ -386,3 +386,23 @@ EMBEDDING_DOCUMENT_PREFIX=
 - Embedding 服务、模型、API Key 和额度需自行准备，公众号“测试模型”不提供 Embedding。沿用上一版 `.env.local`；只看三栏不调用聊天，但会调用向量服务，首次查询另含 16 条语料编码。点击建议页会新发请求，不复用对照页响应。
 
 2026-11-16 使用原语料完成 10 组真实对照，固定输入与候选结果见 `docs/hybrid-evaluation.json`。同义表达的 KB-001 / KB-002 各为一路第一，RRF 均为 1/61；KB-001 排首位来自编号规则，不能当作融合识别更准确的证据。额外定时任务样本保留了消息重复消费和重复提交的主题相近候选。当前没有证明混合检索优于纯语义检索；不换算准确率提升。
+
+
+## 第八篇：聊天模型重排序对照（Tag 1118）
+
+从 RRF Top3 继续做**相关性分级与过滤**，不是专用 Cross-Encoder Reranker，不声称恢复完整相关性排序。仅新增独立演示接口，`/api/v1/knowledge/advice` 的行为未接入本次重排。
+
+- 页面：`http://localhost:8081/rerank.html`
+- 接口：`POST /api/v1/knowledge/rerank`，正文 `{ "description": "问题描述" }`
+- 复用一次两路召回与 RRF，返回原始 `retrieval` 和新 `rerank`。输入会发送至独立 Embedding 服务，问题与最多3条虚构案例会发送至现有聊天模型。
+- 每候选返回 `caseId/grade/reason/evidence`：2明确关键症状匹配，1主题相关但证据不足，0不相关或冲突。只保留2，同级沿用RRF名次；模型输入不包含检索分数，返回候选仍保留原RRF分数含义。
+- 严格 JSON、正常结束标记、每编号恰好一次、分级0至2、理由/摘录长度以及症状/适用范围连续原文校验。摘录来自原文不等于判断正确。
+- `RERANK_TIMEOUT=8s`，大于0且最多30秒。独立客户端无SDK/应用重试，沿用禁止隐式POST重放的HTTP配置。总接口耗时还包括两路检索，不是8秒总时限。
+- 完整召回无候选为 `NO_CANDIDATES`；降级空候选为 `RETRIEVAL_UNAVAILABLE`；降级有候选为 `SKIPPED_DEGRADED`。这些情况不调用聊天模型。
+- 全部判0/1为 `INSUFFICIENT_EVIDENCE`；超时/非法输出/满额分别返回相应状态，原候选保留供查看，不自动作为已通过重排的结果使用。
+- 协议成功返回HTTP200，业务阶段状态读取 `rerank.status`；无效请求依然返回HTTP400。用量只在有效响应返回时展示，失败并不代表上游没有计费。
+- 额度与既有调用共用 `ModelConcurrencyLimiter`；持有额度的调用在finally释放。
+
+运行仍在IDEA选择JDK25，Maven JDK25，工作目录项目根目录，运行 `AiXyzApplication`。沿用本地 `.env.local` 的聊天模型配置；**Embedding服务、模型、密钥及额度需自行准备**。不用新增专用Reranker服务。不要把密钥放入前端或提交Git。
+
+真实13条对照（包含首次超时和两条全拒绝）保存在 `docs/rerank-evaluation.json`。相关性结果只展示本轮教学现象，不能用来证明普遍质量提升；重排看不到RRF Top3之外的资料。本篇对应源码版本为 **Tag `1118`**，获取源码后执行 `git checkout 1118` 即可切换到本文版本。

@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>重排序对照 · Java AI 实战⑧</title><link rel="stylesheet" href="/app.css"><link rel="stylesheet" href="/knowledge.css"><script type="module" src="/rerank.js"></script></head>
+<body><main class="knowledge-main"><header><span class="badge">JAVA × AI · 实战 08</span><h1>检索到了，就能参考吗？</h1><p>相同候选，比较 RRF 与聊天模型相关性分级。查看留下谁、排除谁，以及判断依据。</p><p><a href="/retrieval.html">三路检索对照</a> · <a href="/knowledge.html">带出处的建议</a> · <a href="/">工单草稿</a></p></header>
+<section class="panel"><p class="notice">点击后会把问题描述和最多 3 条教学案例发送给已配置的聊天模型，并调用独立 Embedding 服务。只比较候选筛选，不生成建议或创建工单。请使用公开或脱敏内容。</p>
+<label for="rerank-description">问题描述</label><textarea id="rerank-description" rows="4" maxlength="4000"></textarea>
+<div class="examples"><button type="button" data-query="synonym">换个说法</button><button type="button" data-query="duplicate">定时任务重复</button><button type="button" data-query="vague">信息不足</button><button type="button" data-query="irrelevant">无关问题</button></div>
+<div class="actions"><span>2 = 明确症状匹配；1 = 主题相关但缺关键证据；0 = 不相关或冲突。仅保留 2，同级沿用 RRF 顺序。</span><button type="button" id="rerank-button">检索并重排</button></div><p class="meta">复用一次两路召回与 RRF；聊天模型最多调用一次、默认超时 8 秒，无自动重试。无候选或检索降级时跳过重排。原来的建议接口仍沿用原行为，本页不自动将重排结果接入建议生成。</p></section>
+<section class="comparison" aria-live="polite"><article class="panel" id="before-result"><h2>重排前 · RRF 候选</h2><p>等待对照。</p></article><article class="panel" id="after-result"><h2>重排后 · 可参考案例</h2><p>等待对照。</p></article></section><p id="rerank-meta" class="meta"></p>
+<footer>分级是模型判断，不是置信度。摘录校验只证明文本来自候选，不能证明判断正确。16 条教学案例不代表真实业务表现。重排无法补回未召回的案例。</footer></main></body></html>

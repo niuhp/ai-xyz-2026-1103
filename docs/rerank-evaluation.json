@@ -1,0 +1,422 @@
+{
+  "date": "2026-11-18",
+  "corpus": "teaching-20261111-v1",
+  "embeddingModel": "qwen3.7-text-embedding",
+  "chatModel": "deepseek-v4.1-flash",
+  "timeout": "8s",
+  "automaticRetries": 0,
+  "note": "前10条沿用上一轮问题，另加模糊描述、反向症状和信息不足问题。教学小样本非独立验收集；逐条展示包括超时的首次结果，不据此计算普遍准确率提升。",
+  "samples": [
+    {
+      "name": "literal",
+      "description": "导出 Excel 选择全年数据等待很久提示超时，缩小日期范围后正常",
+      "expectedTop1": "KB-001",
+      "hybridStatus": "MATCHED",
+      "before": [
+        "KB-001",
+        "KB-003",
+        "KB-002"
+      ],
+      "rerankStatus": "MODEL_TIMEOUT",
+      "after": [],
+      "assessment": null,
+      "model": null,
+      "usage": null,
+      "retrievalMillis": 781,
+      "rerankMillis": 8092,
+      "totalMillis": 8874
+    },
+    {
+      "name": "synonym",
+      "description": "想把整年的报表下载到电脑，一直转圈拿不到文件；只选一周就能拿到。",
+      "expectedTop1": "KB-001",
+      "hybridStatus": "MATCHED",
+      "before": [
+        "KB-001",
+        "KB-002",
+        "KB-003"
+      ],
+      "rerankStatus": "RERANKED",
+      "after": [
+        "KB-001"
+      ],
+      "assessment": {
+        "assessments": [
+          {
+            "caseId": "KB-001",
+            "evidence": "查询较大日期范围时，导出 Excel 等待很久后提示超时，小范围导出正常。",
+            "grade": 2,
+            "reason": "用户描述整年报表下载长时间等待拿不到文件、仅选一周可拿到，与大范围导出等待超时、小范围正常的关键症状一致；未提及超时提示不构成冲突。"
+          },
+          {
+            "caseId": "KB-002",
+            "evidence": "",
+            "grade": 0,
+            "reason": "用户是拿不到文件，不是已下载但部分列为空，与本案例导出文件出现空白列的症状冲突，排除。"
+          },
+          {
+            "caseId": "KB-003",
+            "evidence": "导出请求约三十秒返回 504，但应用日志显示任务稍后完成。",
+            "grade": 1,
+            "reason": "主题同属导出请求等待或中断，但用户未提及504、固定约三十秒或应用日志任务完成，需补充关键症状才能建立对应关系。"
+          }
+        ]
+      },
+      "model": "deepseek-v4.1-flash",
+      "usage": {
+        "inputTokens": 949,
+        "outputTokens": 794,
+        "totalTokens": 1743
+      },
+      "retrievalMillis": 80,
+      "rerankMillis": 7664,
+      "totalMillis": 7744
+    },
+    {
+      "name": "code",
+      "description": "登录成功后访问业务接口立即返回 401",
+      "expectedTop1": "KB-006",
+      "hybridStatus": "MATCHED",
+      "before": [
+        "KB-006"
+      ],
+      "rerankStatus": "RERANKED",
+      "after": [
+        "KB-006"
+      ],
+      "assessment": {
+        "assessments": [
+          {
+            "caseId": "KB-006",
+            "evidence": "登录成功后访问业务接口立即返回 401。",
+            "grade": 2,
+            "reason": "用户描述的关键症状与案例症状逐字一致，均表现为登录成功后访问业务接口立即返回 401，无已知冲突，可作人工排查参考。"
+          }
+        ]
+      },
+      "model": "deepseek-v4.1-flash",
+      "usage": {
+        "inputTokens": 669,
+        "outputTokens": 194,
+        "totalTokens": 863
+      },
+      "retrievalMillis": 109,
+      "rerankMillis": 2889,
+      "totalMillis": 2999
+    },
+    {
+      "name": "confusable",
+      "description": "导出的 Excel 有表头，但页面列表有值的几列在文件里全是空白。",
+      "expectedTop1": "KB-002",
+      "hybridStatus": "MATCHED",
+      "before": [
+        "KB-002"
+      ],
+      "rerankStatus": "RERANKED",
+      "after": [
+        "KB-002"
+      ],
+      "assessment": {
+        "assessments": [
+          {
+            "caseId": "KB-002",
+            "evidence": "下载的 Excel 有表头但部分单元格为空，页面列表对应字段有值。",
+            "grade": 2,
+            "reason": "用户描述“有表头但页面有值的列在导出文件里全空白”，与案例症状“有表头但部分单元格为空，页面列表对应字段有值”一致；未提及超时等冲突信息，可作为导出字段映射排查参考。"
+          }
+        ]
+      },
+      "model": "deepseek-v4.1-flash",
+      "usage": {
+        "inputTokens": 692,
+        "outputTokens": 214,
+        "totalTokens": 906
+      },
+      "retrievalMillis": 81,
+      "rerankMillis": 2803,
+      "totalMillis": 2885
+    },
+    {
+      "name": "irrelevant",
+      "description": "量子纠缠实验的光子偏振发生变化，如何调整光学仪器？",
+      "expectedTop1": null,
+      "hybridStatus": "NO_MATCH",
+      "before": [],
+      "rerankStatus": "NO_CANDIDATES",
+      "after": [],
+      "assessment": null,
+      "model": null,
+      "usage": null,
+      "retrievalMillis": 77,
+      "rerankMillis": 0,
+      "totalMillis": 77
+    },
+    {
+      "name": "poem",
+      "description": "请写一首描绘春天的诗。",
+      "expectedTop1": null,
+      "hybridStatus": "NO_MATCH",
+      "before": [],
+      "rerankStatus": "NO_CANDIDATES",
+      "after": [],
+      "assessment": null,
+      "model": null,
+      "usage": null,
+      "retrievalMillis": 160,
+      "rerankMillis": 0,
+      "totalMillis": 160
+    },
+    {
+      "name": "new_upload",
+      "description": "上传较大附件返回 413，小文件上传正常",
+      "expectedTop1": "KB-007",
+      "hybridStatus": "MATCHED",
+      "before": [
+        "KB-007"
+      ],
+      "rerankStatus": "RERANKED",
+      "after": [
+        "KB-007"
+      ],
+      "assessment": {
+        "assessments": [
+          {
+            "caseId": "KB-007",
+            "evidence": "上传较大附件返回 413，小文件上传正常。",
+            "grade": 2,
+            "reason": "用户描述的关键症状与案例症状完全一致：较大附件返回413而小文件正常，且无已知冲突，可作为下一步人工排查参考。"
+          }
+        ]
+      },
+      "model": "deepseek-v4.1-flash",
+      "usage": {
+        "inputTokens": 670,
+        "outputTokens": 140,
+        "totalTokens": 810
+      },
+      "retrievalMillis": 78,
+      "rerankMillis": 2543,
+      "totalMillis": 2621
+    },
+    {
+      "name": "new_permission",
+      "description": "管理员给角色加了操作按钮的权限，但同事重新看页面还是找不到那个按钮。",
+      "expectedTop1": "KB-005",
+      "hybridStatus": "MATCHED",
+      "before": [
+        "KB-005"
+      ],
+      "rerankStatus": "RERANKED",
+      "after": [
+        "KB-005"
+      ],
+      "assessment": {
+        "assessments": [
+          {
+            "caseId": "KB-005",
+            "evidence": "管理员已给角色增加按钮权限，用户页面仍看不到按钮。",
+            "grade": 2,
+            "reason": "用户描述“给角色加了操作按钮权限，同事重新看页面仍找不到按钮”，与案例症状“管理员已给角色增加按钮权限，用户页面仍看不到按钮”一致，主题和关键现象匹配，无已知冲突。"
+          }
+        ]
+      },
+      "model": "deepseek-v4.1-flash",
+      "usage": {
+        "inputTokens": 673,
+        "outputTokens": 181,
+        "totalTokens": 854
+      },
+      "retrievalMillis": 84,
+      "rerankMillis": 3046,
+      "totalMillis": 3130
+    },
+    {
+      "name": "new_duplicate",
+      "description": "部署成多台服务后，同一个定时任务在一分钟里跑了好几遍。",
+      "expectedTop1": "KB-011",
+      "hybridStatus": "MATCHED",
+      "before": [
+        "KB-011",
+        "KB-012",
+        "KB-016"
+      ],
+      "rerankStatus": "RERANKED",
+      "after": [
+        "KB-011"
+      ],
+      "assessment": {
+        "assessments": [
+          {
+            "caseId": "KB-011",
+            "evidence": "多实例部署后相同定时任务在短时间内重复执行。",
+            "grade": 2,
+            "reason": "用户描述为多台服务部署后同一 scheduled task 在一分钟内重复执行，与该案例的多实例部署后相同定时任务短时间内重复执行高度一致，可作为参考。"
+          },
+          {
+            "caseId": "KB-012",
+            "evidence": "",
+            "grade": 0,
+            "reason": "用户描述的是多实例部署后定时任务重复执行，未涉及消息重复到达或消息重复消费，关键对象和症状与该案例不一致。"
+          },
+          {
+            "caseId": "KB-016",
+            "evidence": "",
+            "grade": 0,
+            "reason": "用户描述的是多实例部署后定时任务重复执行，不是页面连续点击提交或生成重复工单，症状与场景不相关。"
+          }
+        ]
+      },
+      "model": "deepseek-v4.1-flash",
+      "usage": {
+        "inputTokens": 892,
+        "outputTokens": 466,
+        "totalTokens": 1358
+      },
+      "retrievalMillis": 87,
+      "rerankMillis": 4624,
+      "totalMillis": 4712
+    },
+    {
+      "name": "new_gateway",
+      "description": "导出约三十秒返回 504，但应用日志显示任务稍后完成。",
+      "expectedTop1": "KB-003",
+      "hybridStatus": "MATCHED",
+      "before": [
+        "KB-003",
+        "KB-001"
+      ],
+      "rerankStatus": "RERANKED",
+      "after": [
+        "KB-003"
+      ],
+      "assessment": {
+        "assessments": [
+          {
+            "caseId": "KB-003",
+            "evidence": "导出请求约三十秒返回 504，但应用日志显示任务稍后完成。",
+            "grade": 2,
+            "reason": "用户描述的关键症状与案例症状一致：导出约三十秒返回504，应用日志显示任务稍后完成，且无冲突，可作为排查参考。"
+          },
+          {
+            "caseId": "KB-001",
+            "evidence": "查询较大日期范围时，导出 Excel 等待很久后提示超时，小范围导出正常。",
+            "grade": 1,
+            "reason": "同属导出超时主题，但用户未说明大数据量日期范围、小范围导出正常等关键症状，需补充后才能建立对应关系。"
+          }
+        ]
+      },
+      "model": "deepseek-v4.1-flash",
+      "usage": {
+        "inputTokens": 823,
+        "outputTokens": 341,
+        "totalTokens": 1164
+      },
+      "retrievalMillis": 80,
+      "rerankMillis": 3731,
+      "totalMillis": 3812
+    },
+    {
+      "name": "vague",
+      "description": "报表有点问题，不知道是哪里坏了。",
+      "expectedTop1": null,
+      "hybridStatus": "NO_MATCH",
+      "before": [],
+      "rerankStatus": "NO_CANDIDATES",
+      "after": [],
+      "assessment": null,
+      "model": null,
+      "usage": null,
+      "retrievalMillis": 95,
+      "rerankMillis": 0,
+      "totalMillis": 95
+    },
+    {
+      "name": "additional-11",
+      "description": "导出 Excel 后页面出现了红色提示，但文件成功下载，所有列都有值，耗时也正常。",
+      "expectedTop1": null,
+      "hybridStatus": "MATCHED",
+      "before": [
+        "KB-002",
+        "KB-001",
+        "KB-003"
+      ],
+      "rerankStatus": "INSUFFICIENT_EVIDENCE",
+      "after": [],
+      "assessment": {
+        "assessments": [
+          {
+            "caseId": "KB-002",
+            "evidence": "",
+            "grade": 0,
+            "reason": "用户明确文件成功下载且所有列都有值，与案例的“部分单元格为空”关键症状相反；页面红色提示也未在案例中体现。"
+          },
+          {
+            "caseId": "KB-001",
+            "evidence": "",
+            "grade": 0,
+            "reason": "用户耗时正常且文件成功下载，未出现等待很久后导出超时；与案例的大批量导出超时症状直接冲突。"
+          },
+          {
+            "caseId": "KB-003",
+            "evidence": "",
+            "grade": 0,
+            "reason": "用户文件成功下载且耗时正常，未出现约三十秒返回504或超时；与案例的网关固定时长结束导出请求症状冲突。"
+          }
+        ]
+      },
+      "model": "deepseek-v4.1-flash",
+      "usage": {
+        "inputTokens": 951,
+        "outputTokens": 679,
+        "totalTokens": 1630
+      },
+      "retrievalMillis": 126,
+      "rerankMillis": 6053,
+      "totalMillis": 6179
+    },
+    {
+      "name": "additional-12",
+      "description": "系统提示导出失败，但我不知道耗时、错误码或文件内容，是否需要先确认现象？",
+      "expectedTop1": null,
+      "hybridStatus": "MATCHED",
+      "before": [
+        "KB-001",
+        "KB-002",
+        "KB-007"
+      ],
+      "rerankStatus": "INSUFFICIENT_EVIDENCE",
+      "after": [],
+      "assessment": {
+        "assessments": [
+          {
+            "caseId": "KB-001",
+            "evidence": "查询较大日期范围时，导出 Excel 等待很久后提示超时，小范围导出正常。",
+            "grade": 1,
+            "reason": "用户仅说导出失败，未说明是否为大数量、耗时或超时，也未确认小范围是否正常；主题相关但关键症状缺失，需先补充现象。"
+          },
+          {
+            "caseId": "KB-002",
+            "evidence": "",
+            "grade": 0,
+            "reason": "用户描述的是导出失败提示，并非已下载文件且部分单元格为空；关键症状冲突，不能对应本案例。"
+          },
+          {
+            "caseId": "KB-007",
+            "evidence": "",
+            "grade": 0,
+            "reason": "用户问题属于导出失败，案例是上传附件超过大小限制返回413，模块和症状均不匹配。"
+          }
+        ]
+      },
+      "model": "deepseek-v4.1-flash",
+      "usage": {
+        "inputTokens": 938,
+        "outputTokens": 779,
+        "totalTokens": 1717
+      },
+      "retrievalMillis": 209,
+      "rerankMillis": 6789,
+      "totalMillis": 6998
+    }
+  ]
+}

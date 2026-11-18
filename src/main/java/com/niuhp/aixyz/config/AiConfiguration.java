@@ -25,6 +25,8 @@ import org.springframework.core.io.ClassPathResource;
 @Configuration
 public class AiConfiguration {
 
+    private static final Duration MAX_RERANK_TIMEOUT = Duration.ofSeconds(30);
+
     @Bean
     public OpenAiHttpClientBuilderCustomizer disableImplicitRequestReplay() {
         // OkHttp 对 503 + Retry-After: 0 也可能隐式重放 POST；SDK 重试为 0 还不够。
@@ -51,6 +53,15 @@ public class AiConfiguration {
     public ChatClient ticketStreamChatClient(ChatClient.Builder builder, OpenAiChatProperties chatProperties,
             @Value("${app.ticket.stream-timeout:45s}") Duration timeout) {
         return builder.defaultOptions(options(chatProperties, timeout).streamUsage(true)).build();
+    }
+
+    @Bean
+    public ChatClient caseRerankChatClient(ChatClient.Builder builder, OpenAiChatProperties chatProperties,
+            @Value("${app.knowledge.rerank-timeout:8s}") Duration timeout) {
+        if (timeout.isNegative() || timeout.isZero() || timeout.compareTo(MAX_RERANK_TIMEOUT) > 0) {
+            throw new IllegalArgumentException("重排单次超时应大于零且不超过 30 秒");
+        }
+        return builder.defaultOptions(options(chatProperties, timeout)).build();
     }
 
     private OpenAiChatOptions.Builder options(OpenAiChatProperties chatProperties, Duration timeout) {

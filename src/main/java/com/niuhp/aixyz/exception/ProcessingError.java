@@ -41,6 +41,8 @@ public enum ProcessingError {
     INVALID_MODEL_OUTPUT(HttpStatus.BAD_GATEWAY, "模型返回内容不符合工单结构，请调整描述后重试"),
     /** 建议格式或引用不符合本次检索结果。 */
     INVALID_ADVICE_OUTPUT(HttpStatus.BAD_GATEWAY, "模型建议或引用未通过校验，本次结果已丢弃，请勿据此操作"),
+    /** 重排判断或摘录未通过校验。 */
+    INVALID_RERANK_OUTPUT(HttpStatus.BAD_GATEWAY, "重排输出未通过校验，本次判断已丢弃"),
     /** 尚未配置独立向量模型。 */
     EMBEDDING_DISABLED(HttpStatus.SERVICE_UNAVAILABLE, "语义检索尚未启用，请配置独立的 Embedding 服务后重启"),
     /** 向量模型调用失败，不回退为其他检索方式。 */

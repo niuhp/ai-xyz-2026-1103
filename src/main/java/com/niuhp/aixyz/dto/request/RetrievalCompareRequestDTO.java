@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * 同题检索对照输入，不调用生成模型。
+ * 检索或重排对照输入；是否调用聊天模型由所用接口决定。
  *
  * @author niuhaipeng
  */
