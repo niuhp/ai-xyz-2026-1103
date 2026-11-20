@@ -11,7 +11,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class AiXyzApplication {
 
+    private static final String EVALUATION_ENABLED_PROPERTY = "app.evaluation.enabled";
+
     public static void main(String[] args) {
-        SpringApplication.run(AiXyzApplication.class, args);
+        var context = SpringApplication.run(AiXyzApplication.class, args);
+        if (context.getEnvironment().getProperty(EVALUATION_ENABLED_PROPERTY, Boolean.class, false)) {
+            context.close();
+        }
     }
 }

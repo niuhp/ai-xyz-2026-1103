@@ -1,0 +1,160 @@
+{
+  "version": "teaching-eval-20261120-v1",
+  "labelPolicy": "人工按症状和适用条件标注可供下一步核实的案例；不是根因标签。空集合表示当前描述下无足够依据。tune使用既有调试问题，regression为本轮先写后跑的冻结教学表达，仍围绕同一16条语料，不能视为独立生产验收集。",
+  "samples": [
+    {
+      "id": "t01",
+      "split": "tune",
+      "description": "导出 Excel 选择全年数据等待很久提示超时，缩小日期范围后正常",
+      "expectedIds": [
+        "KB-001"
+      ],
+      "rationale": "大范围失败、小范围正常，可参考大批量导出案例。"
+    },
+    {
+      "id": "t02",
+      "split": "tune",
+      "description": "想把整年的报表下载到电脑，一直转圈拿不到文件；只选一周就能拿到。",
+      "expectedIds": [
+        "KB-001"
+      ],
+      "rationale": "沿用上一轮同义表达。"
+    },
+    {
+      "id": "t03",
+      "split": "tune",
+      "description": "登录成功后访问业务接口立即返回 401",
+      "expectedIds": [
+        "KB-006"
+      ],
+      "rationale": "明确的未认证症状。"
+    },
+    {
+      "id": "t04",
+      "split": "tune",
+      "description": "部署成多台服务后，同一个定时任务在一分钟里跑了好几遍。",
+      "expectedIds": [
+        "KB-011"
+      ],
+      "rationale": "多实例定时任务，非消息或页面重复提交。"
+    },
+    {
+      "id": "t05",
+      "split": "tune",
+      "description": "导出 Excel 后页面出现了红色提示，但文件成功下载，所有列都有值，耗时也正常。",
+      "expectedIds": [],
+      "rationale": "明确排除现有导出案例的核心症状。"
+    },
+    {
+      "id": "t06",
+      "split": "tune",
+      "description": "量子纠缠实验的光子偏振发生变化，如何调整光学仪器？",
+      "expectedIds": [],
+      "rationale": "超出教学运维语料范围。"
+    },
+    {
+      "id": "r01",
+      "split": "regression",
+      "description": "导出近十二个月的数据总是等待很久后超时，只导出最近七天就正常。",
+      "expectedIds": [
+        "KB-001"
+      ],
+      "rationale": "大范围导出超时与小范围成功的组合症状。"
+    },
+    {
+      "id": "r02",
+      "split": "regression",
+      "description": "Excel 已下载成功，表头也在；网页中有值的几个字段，导出单元格却为空。",
+      "expectedIds": [
+        "KB-002"
+      ],
+      "rationale": "已有文件且部分字段空白，非超时。"
+    },
+    {
+      "id": "r03",
+      "split": "regression",
+      "description": "下载报表恰好三十秒收到 504，可是服务日志里这项任务过一会儿显示完成。",
+      "expectedIds": [
+        "KB-003"
+      ],
+      "rationale": "固定时间504及后台完成。"
+    },
+    {
+      "id": "r04",
+      "split": "regression",
+      "description": "刚登录取得成功响应，再请求业务数据立刻报 HTTP 401。",
+      "expectedIds": [
+        "KB-006"
+      ],
+      "rationale": "登录后立刻未认证。"
+    },
+    {
+      "id": "r05",
+      "split": "regression",
+      "description": "同样的上传入口，10MB附件返回413，几KB的文件可以成功。",
+      "expectedIds": [
+        "KB-007"
+      ],
+      "rationale": "大文件413、小文件正常。"
+    },
+    {
+      "id": "r06",
+      "split": "regression",
+      "description": "集群从一台扩到三台后，同一计划任务同一分钟执行了三次。",
+      "expectedIds": [
+        "KB-011"
+      ],
+      "rationale": "多实例重复执行计划任务。"
+    },
+    {
+      "id": "r07",
+      "split": "regression",
+      "description": "连续快速点了两下创建工单，数据库里多出两条相同记录。",
+      "expectedIds": [
+        "KB-016"
+      ],
+      "rationale": "页面连续提交与重复记录。"
+    },
+    {
+      "id": "r08",
+      "split": "regression",
+      "description": "登录后请求接口马上401；另一个入口传大文件413，但小文件正常。",
+      "expectedIds": [
+        "KB-006",
+        "KB-007"
+      ],
+      "rationale": "独立两个症状，两个参考案例均须找回。"
+    },
+    {
+      "id": "r09",
+      "split": "regression",
+      "description": "页面报表区域出现红色提示，但 Excel 秒下、每一列都有内容。",
+      "expectedIds": [],
+      "rationale": "当前三条导出案例均缺症状匹配依据。"
+    },
+    {
+      "id": "r10",
+      "split": "regression",
+      "description": "只知道用户说“系统有问题”，没有页面、现象、错误码或操作步骤。",
+      "expectedIds": [],
+      "rationale": "缺少关键症状，不选具体案例。"
+    },
+    {
+      "id": "r11",
+      "split": "regression",
+      "description": "请帮我写一段结婚纪念日的祝福语。",
+      "expectedIds": [],
+      "rationale": "与教学案例无关。"
+    },
+    {
+      "id": "r12",
+      "split": "regression",
+      "description": "管理员给角色授予按钮权限后，员工页面还是没有按钮；数据库更新时间与页面时间又差八小时。",
+      "expectedIds": [
+        "KB-005",
+        "KB-014"
+      ],
+      "rationale": "权限和时间两个独立症状。"
+    }
+  ]
+}

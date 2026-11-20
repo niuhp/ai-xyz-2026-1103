@@ -1,0 +1,592 @@
+{
+  "changes" : [ ],
+  "comparisonNote" : "未指定基线。本报告比较同次调用的四个方法；没有进行提示词 A/B 实验。",
+  "configuration" : {
+    "source" : "LIVE_SERVICES",
+    "sourceRevision" : "0665b5a-dirty",
+    "rerankMaxRetries" : 0,
+    "gradeRetained" : 2,
+    "chatModel" : "deepseek-v4.1-flash",
+    "chatBaseUrl" : "https://www.fastaitoken.com/v1",
+    "embeddingModel" : "qwen3.7-text-embedding",
+    "embeddingBaseUrl" : "https://maas.qianwenaiapi.com/compatible-mode/v1",
+    "embeddingEnabled" : true,
+    "embeddingTimeout" : "PT15S",
+    "queryPrefix" : "",
+    "documentPrefix" : "",
+    "lexicalThreshold" : 0.16,
+    "semanticThreshold" : 0.55,
+    "rerankTimeout" : "8s",
+    "rrfK" : 60,
+    "perRouteLimit" : 3,
+    "finalLimit" : 3,
+    "rerankPromptSha256" : "2946ac5696129fe12a2bd472bbb1c76ed41d319637de2a0e529cb76da48a29e8",
+    "implementation" : "evaluation-v1-grade2-filter"
+  },
+  "configurationSha256" : "18a5e33e28908a7b76e29b4774bd75326dcfc0c6d830a1e753272ac37eea05b7",
+  "corpusSha256" : "2b31a101ee402ddf3e574ea44c286650677fb13bfbeb48eb5d6f0bfa6d93c6e3",
+  "corpusVersion" : "teaching-20261111-v1",
+  "createdAt" : "2026-11-20T14:44:56.993281+08:00",
+  "datasetSha256" : "480f38af7d4f5afc3fbc33eaa43dfee45cf137b242c5a67985a57b614a9866ee",
+  "datasetVersion" : "teaching-eval-20261120-v1",
+  "metrics" : [ {
+    "completed" : 12,
+    "correctAbstentions" : 1,
+    "exact" : 8,
+    "falseRejections" : 0,
+    "macroPrecision" : 0.7424242424242423,
+    "macroRecall" : 1.0,
+    "meanElapsedMillis" : 0.08333333333333333,
+    "method" : "TFIDF",
+    "negativeCompleted" : 3,
+    "nonemptyCompleted" : 11,
+    "positiveCompleted" : 9,
+    "reportedTotalTokens" : 0,
+    "tokenObservations" : 0,
+    "top1Hits" : 9,
+    "total" : 12
+  }, {
+    "completed" : 12,
+    "correctAbstentions" : 2,
+    "exact" : 5,
+    "falseRejections" : 0,
+    "macroPrecision" : 0.5666666666666667,
+    "macroRecall" : 1.0,
+    "meanElapsedMillis" : 175.25,
+    "method" : "SEMANTIC",
+    "negativeCompleted" : 3,
+    "nonemptyCompleted" : 10,
+    "positiveCompleted" : 9,
+    "reportedTotalTokens" : 0,
+    "tokenObservations" : 0,
+    "top1Hits" : 9,
+    "total" : 12
+  }, {
+    "completed" : 12,
+    "correctAbstentions" : 1,
+    "exact" : 4,
+    "falseRejections" : 0,
+    "macroPrecision" : 0.5151515151515151,
+    "macroRecall" : 1.0,
+    "meanElapsedMillis" : 175.75,
+    "method" : "HYBRID",
+    "negativeCompleted" : 3,
+    "nonemptyCompleted" : 11,
+    "positiveCompleted" : 9,
+    "reportedTotalTokens" : 0,
+    "tokenObservations" : 0,
+    "top1Hits" : 9,
+    "total" : 12
+  }, {
+    "completed" : 12,
+    "correctAbstentions" : 3,
+    "exact" : 12,
+    "falseRejections" : 0,
+    "macroPrecision" : 1.0,
+    "macroRecall" : 1.0,
+    "meanElapsedMillis" : 4468.833333333333,
+    "method" : "RERANK",
+    "negativeCompleted" : 3,
+    "nonemptyCompleted" : 9,
+    "positiveCompleted" : 9,
+    "reportedTotalTokens" : 13706,
+    "tokenObservations" : 11,
+    "top1Hits" : 9,
+    "total" : 12
+  } ],
+  "rows" : [ {
+    "observations" : [ {
+      "actualIds" : [ "KB-001" ],
+      "completed" : true,
+      "elapsedMillis" : 1,
+      "method" : "TFIDF",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-001", "KB-003", "KB-002" ],
+      "completed" : true,
+      "elapsedMillis" : 709,
+      "method" : "SEMANTIC",
+      "model" : "qwen3.7-text-embedding",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-001", "KB-003", "KB-002" ],
+      "completed" : true,
+      "elapsedMillis" : 711,
+      "method" : "HYBRID",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-001" ],
+      "completed" : true,
+      "elapsedMillis" : 8226,
+      "method" : "RERANK",
+      "model" : "deepseek-v4.1-flash",
+      "status" : "RERANKED",
+      "totalTokens" : 1711
+    } ],
+    "sample" : {
+      "description" : "导出近十二个月的数据总是等待很久后超时，只导出最近七天就正常。",
+      "expectedIds" : [ "KB-001" ],
+      "id" : "r01",
+      "rationale" : "大范围导出超时与小范围成功的组合症状。",
+      "split" : "regression"
+    }
+  }, {
+    "observations" : [ {
+      "actualIds" : [ "KB-002" ],
+      "completed" : true,
+      "elapsedMillis" : 0,
+      "method" : "TFIDF",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-002", "KB-001" ],
+      "completed" : true,
+      "elapsedMillis" : 140,
+      "method" : "SEMANTIC",
+      "model" : "qwen3.7-text-embedding",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-002", "KB-001" ],
+      "completed" : true,
+      "elapsedMillis" : 141,
+      "method" : "HYBRID",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-002" ],
+      "completed" : true,
+      "elapsedMillis" : 4644,
+      "method" : "RERANK",
+      "model" : "deepseek-v4.1-flash",
+      "status" : "RERANKED",
+      "totalTokens" : 1194
+    } ],
+    "sample" : {
+      "description" : "Excel 已下载成功，表头也在；网页中有值的几个字段，导出单元格却为空。",
+      "expectedIds" : [ "KB-002" ],
+      "id" : "r02",
+      "rationale" : "已有文件且部分字段空白，非超时。",
+      "split" : "regression"
+    }
+  }, {
+    "observations" : [ {
+      "actualIds" : [ "KB-003" ],
+      "completed" : true,
+      "elapsedMillis" : 0,
+      "method" : "TFIDF",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-003", "KB-001" ],
+      "completed" : true,
+      "elapsedMillis" : 66,
+      "method" : "SEMANTIC",
+      "model" : "qwen3.7-text-embedding",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-003", "KB-001" ],
+      "completed" : true,
+      "elapsedMillis" : 66,
+      "method" : "HYBRID",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-003" ],
+      "completed" : true,
+      "elapsedMillis" : 4837,
+      "method" : "RERANK",
+      "model" : "deepseek-v4.1-flash",
+      "status" : "RERANKED",
+      "totalTokens" : 1289
+    } ],
+    "sample" : {
+      "description" : "下载报表恰好三十秒收到 504，可是服务日志里这项任务过一会儿显示完成。",
+      "expectedIds" : [ "KB-003" ],
+      "id" : "r03",
+      "rationale" : "固定时间504及后台完成。",
+      "split" : "regression"
+    }
+  }, {
+    "observations" : [ {
+      "actualIds" : [ "KB-006" ],
+      "completed" : true,
+      "elapsedMillis" : 0,
+      "method" : "TFIDF",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-006" ],
+      "completed" : true,
+      "elapsedMillis" : 149,
+      "method" : "SEMANTIC",
+      "model" : "qwen3.7-text-embedding",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-006" ],
+      "completed" : true,
+      "elapsedMillis" : 150,
+      "method" : "HYBRID",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-006" ],
+      "completed" : true,
+      "elapsedMillis" : 2921,
+      "method" : "RERANK",
+      "model" : "deepseek-v4.1-flash",
+      "status" : "RERANKED",
+      "totalTokens" : 839
+    } ],
+    "sample" : {
+      "description" : "刚登录取得成功响应，再请求业务数据立刻报 HTTP 401。",
+      "expectedIds" : [ "KB-006" ],
+      "id" : "r04",
+      "rationale" : "登录后立刻未认证。",
+      "split" : "regression"
+    }
+  }, {
+    "observations" : [ {
+      "actualIds" : [ "KB-007" ],
+      "completed" : true,
+      "elapsedMillis" : 0,
+      "method" : "TFIDF",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-007" ],
+      "completed" : true,
+      "elapsedMillis" : 119,
+      "method" : "SEMANTIC",
+      "model" : "qwen3.7-text-embedding",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-007" ],
+      "completed" : true,
+      "elapsedMillis" : 120,
+      "method" : "HYBRID",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-007" ],
+      "completed" : true,
+      "elapsedMillis" : 3360,
+      "method" : "RERANK",
+      "model" : "deepseek-v4.1-flash",
+      "status" : "RERANKED",
+      "totalTokens" : 925
+    } ],
+    "sample" : {
+      "description" : "同样的上传入口，10MB附件返回413，几KB的文件可以成功。",
+      "expectedIds" : [ "KB-007" ],
+      "id" : "r05",
+      "rationale" : "大文件413、小文件正常。",
+      "split" : "regression"
+    }
+  }, {
+    "observations" : [ {
+      "actualIds" : [ "KB-011", "KB-012" ],
+      "completed" : true,
+      "elapsedMillis" : 0,
+      "method" : "TFIDF",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-011", "KB-016", "KB-012" ],
+      "completed" : true,
+      "elapsedMillis" : 126,
+      "method" : "SEMANTIC",
+      "model" : "qwen3.7-text-embedding",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-011", "KB-012", "KB-016" ],
+      "completed" : true,
+      "elapsedMillis" : 126,
+      "method" : "HYBRID",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-011" ],
+      "completed" : true,
+      "elapsedMillis" : 7228,
+      "method" : "RERANK",
+      "model" : "deepseek-v4.1-flash",
+      "status" : "RERANKED",
+      "totalTokens" : 1758
+    } ],
+    "sample" : {
+      "description" : "集群从一台扩到三台后，同一计划任务同一分钟执行了三次。",
+      "expectedIds" : [ "KB-011" ],
+      "id" : "r06",
+      "rationale" : "多实例重复执行计划任务。",
+      "split" : "regression"
+    }
+  }, {
+    "observations" : [ {
+      "actualIds" : [ "KB-016" ],
+      "completed" : true,
+      "elapsedMillis" : 0,
+      "method" : "TFIDF",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-016", "KB-009", "KB-011" ],
+      "completed" : true,
+      "elapsedMillis" : 98,
+      "method" : "SEMANTIC",
+      "model" : "qwen3.7-text-embedding",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-016", "KB-009", "KB-011" ],
+      "completed" : true,
+      "elapsedMillis" : 98,
+      "method" : "HYBRID",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-016" ],
+      "completed" : true,
+      "elapsedMillis" : 4799,
+      "method" : "RERANK",
+      "model" : "deepseek-v4.1-flash",
+      "status" : "RERANKED",
+      "totalTokens" : 1393
+    } ],
+    "sample" : {
+      "description" : "连续快速点了两下创建工单，数据库里多出两条相同记录。",
+      "expectedIds" : [ "KB-016" ],
+      "id" : "r07",
+      "rationale" : "页面连续提交与重复记录。",
+      "split" : "regression"
+    }
+  }, {
+    "observations" : [ {
+      "actualIds" : [ "KB-006", "KB-007" ],
+      "completed" : true,
+      "elapsedMillis" : 0,
+      "method" : "TFIDF",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-007", "KB-006" ],
+      "completed" : true,
+      "elapsedMillis" : 154,
+      "method" : "SEMANTIC",
+      "model" : "qwen3.7-text-embedding",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-006", "KB-007" ],
+      "completed" : true,
+      "elapsedMillis" : 154,
+      "method" : "HYBRID",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-006", "KB-007" ],
+      "completed" : true,
+      "elapsedMillis" : 4004,
+      "method" : "RERANK",
+      "model" : "deepseek-v4.1-flash",
+      "status" : "RERANKED",
+      "totalTokens" : 1110
+    } ],
+    "sample" : {
+      "description" : "登录后请求接口马上401；另一个入口传大文件413，但小文件正常。",
+      "expectedIds" : [ "KB-006", "KB-007" ],
+      "id" : "r08",
+      "rationale" : "独立两个症状，两个参考案例均须找回。",
+      "split" : "regression"
+    }
+  }, {
+    "observations" : [ {
+      "actualIds" : [ "KB-001" ],
+      "completed" : true,
+      "elapsedMillis" : 0,
+      "method" : "TFIDF",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-002" ],
+      "completed" : true,
+      "elapsedMillis" : 112,
+      "method" : "SEMANTIC",
+      "model" : "qwen3.7-text-embedding",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-001", "KB-002" ],
+      "completed" : true,
+      "elapsedMillis" : 112,
+      "method" : "HYBRID",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ ],
+      "completed" : true,
+      "elapsedMillis" : 4405,
+      "method" : "RERANK",
+      "model" : "deepseek-v4.1-flash",
+      "status" : "INSUFFICIENT_EVIDENCE",
+      "totalTokens" : 1159
+    } ],
+    "sample" : {
+      "description" : "页面报表区域出现红色提示，但 Excel 秒下、每一列都有内容。",
+      "expectedIds" : [ ],
+      "id" : "r09",
+      "rationale" : "当前三条导出案例均缺症状匹配依据。",
+      "split" : "regression"
+    }
+  }, {
+    "observations" : [ {
+      "actualIds" : [ "KB-005" ],
+      "completed" : true,
+      "elapsedMillis" : 0,
+      "method" : "TFIDF",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ ],
+      "completed" : true,
+      "elapsedMillis" : 117,
+      "method" : "SEMANTIC",
+      "model" : "qwen3.7-text-embedding",
+      "status" : "NO_MATCH",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-005" ],
+      "completed" : true,
+      "elapsedMillis" : 117,
+      "method" : "HYBRID",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ ],
+      "completed" : true,
+      "elapsedMillis" : 3958,
+      "method" : "RERANK",
+      "model" : "deepseek-v4.1-flash",
+      "status" : "INSUFFICIENT_EVIDENCE",
+      "totalTokens" : 941
+    } ],
+    "sample" : {
+      "description" : "只知道用户说“系统有问题”，没有页面、现象、错误码或操作步骤。",
+      "expectedIds" : [ ],
+      "id" : "r10",
+      "rationale" : "缺少关键症状，不选具体案例。",
+      "split" : "regression"
+    }
+  }, {
+    "observations" : [ {
+      "actualIds" : [ ],
+      "completed" : true,
+      "elapsedMillis" : 0,
+      "method" : "TFIDF",
+      "model" : "local",
+      "status" : "NO_MATCH",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ ],
+      "completed" : true,
+      "elapsedMillis" : 143,
+      "method" : "SEMANTIC",
+      "model" : "qwen3.7-text-embedding",
+      "status" : "NO_MATCH",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ ],
+      "completed" : true,
+      "elapsedMillis" : 144,
+      "method" : "HYBRID",
+      "model" : "local",
+      "status" : "NO_MATCH",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ ],
+      "completed" : true,
+      "elapsedMillis" : 144,
+      "method" : "RERANK",
+      "model" : null,
+      "status" : "NO_CANDIDATES",
+      "totalTokens" : null
+    } ],
+    "sample" : {
+      "description" : "请帮我写一段结婚纪念日的祝福语。",
+      "expectedIds" : [ ],
+      "id" : "r11",
+      "rationale" : "与教学案例无关。",
+      "split" : "regression"
+    }
+  }, {
+    "observations" : [ {
+      "actualIds" : [ "KB-014", "KB-005", "KB-015" ],
+      "completed" : true,
+      "elapsedMillis" : 0,
+      "method" : "TFIDF",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-005", "KB-014", "KB-015" ],
+      "completed" : true,
+      "elapsedMillis" : 170,
+      "method" : "SEMANTIC",
+      "model" : "qwen3.7-text-embedding",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-005", "KB-014", "KB-015" ],
+      "completed" : true,
+      "elapsedMillis" : 170,
+      "method" : "HYBRID",
+      "model" : "local",
+      "status" : "MATCHED",
+      "totalTokens" : null
+    }, {
+      "actualIds" : [ "KB-005", "KB-014" ],
+      "completed" : true,
+      "elapsedMillis" : 5100,
+      "method" : "RERANK",
+      "model" : "deepseek-v4.1-flash",
+      "status" : "RERANKED",
+      "totalTokens" : 1387
+    } ],
+    "sample" : {
+      "description" : "管理员给角色授予按钮权限后，员工页面还是没有按钮；数据库更新时间与页面时间又差八小时。",
+      "expectedIds" : [ "KB-005", "KB-014" ],
+      "id" : "r12",
+      "rationale" : "权限和时间两个独立症状。",
+      "split" : "regression"
+    }
+  } ],
+  "runLabel" : "regression-0665b5a-dirty",
+  "split" : "regression"
+}

@@ -406,3 +406,58 @@ EMBEDDING_DOCUMENT_PREFIX=
 运行仍在IDEA选择JDK25，Maven JDK25，工作目录项目根目录，运行 `AiXyzApplication`。沿用本地 `.env.local` 的聊天模型配置；**Embedding服务、模型、密钥及额度需自行准备**。不用新增专用Reranker服务。不要把密钥放入前端或提交Git。
 
 真实13条对照（包含首次超时和两条全拒绝）保存在 `docs/rerank-evaluation.json`。相关性结果只展示本轮教学现象，不能用来证明普遍质量提升；重排看不到RRF Top3之外的资料。本篇对应源码版本为 **Tag `1118`**，获取源码后执行 `git checkout 1118` 即可切换到本文版本。
+
+
+## 第九篇：检索回归评测（Tag 1120）
+
+本次不更改重排提示词或检索参数，新增单独批处理评测。正常启动不会批量调用模型，没有HTTP批量评测入口。
+
+### 手动标注与运行
+
+固定样本位于 `src/main/resources/evaluation/retrieval-benchmark.json`：6条`tune`、12条`regression`。标签是可供核实的案例集合，空集合是当前信息不足以选择参考案例。调试表达沿用既有例子，回归表达先写后跑；两者仍围绕同一16条教学案例，**不是独立生产验收集**。不要根据回归结果改标签或反复调提示词；调试在tune进行，最终评估另外收集独立标注题目。
+
+```bash
+export JAVA_HOME=$(/usr/libexec/java_home -v 25)
+./scripts/evaluate.sh tune
+./scripts/evaluate.sh regression .local/evaluation/run-a
+# 修改单一配置后使用新目录，与已冻结基线比较；仍会重新调用服务
+./scripts/evaluate.sh regression .local/evaluation/run-b .local/evaluation/run-a/report.json
+```
+
+IDEA：运行`AiXyzApplication`，JDK与Maven JDK25，工作目录项目根目录，程序参数填：
+
+```text
+--spring.main.web-application-type=none
+--app.evaluation.enabled=true
+--app.evaluation.split=regression
+--app.evaluation.output=.local/evaluation/idea-run-a
+--spring.datasource.url=jdbc:h2:mem:evaluation
+```
+
+每次选新输出目录，不覆盖旧报告。命令构建后以无Web模式运行，结束后关闭Spring上下文，不监听8081/8082。沿用`.env.local`，聊天与Embedding服务会消耗额度；Embedding需读者自行准备。报告保存脱敏教学描述、标签、模型/服务地址、参数、语料/数据/提示词哈希，不保存Key。不要将含凭证的查询参数放进Base URL。
+
+每题复用一次`CaseRerankService.compare`，TF-IDF、Embedding、RRF、重排共享本次候选。顺序执行，不额外重试失败样本。JSON与HTML输出在指定目录，浏览器打开`report.html`即可；各题公开期望/实际、漏选、多选、故障，支持核对。
+
+### 指标口径
+
+- 完成/全部：`DEGRADED`、超时、非法输出等都不算正常完成；重排`NO_CANDIDATES`是正常空结果，`SKIPPED_DEGRADED`不是。
+- 精确集合/完成：实际案例集合与人工期望完全相同，不要求顺序。可同时发现漏选与多选。
+- 首位命中/有答案且完成：首条在期望集合中。多标签时只命中一个不能代表完整召回。
+- 误拒绝/有答案且完成：有期望案例却正常输出空集合；超时不计成误拒绝，而是完成率下降。
+- 正确空选/无答案且完成：期望为空，实际也为空。
+- 宏Precision：仅非空且完成的问题计算`交集数/实际数`再平均；空输出不定义Precision，另外看误拒绝。
+- 宏Recall：仅有期望且完成的问题计算`交集数/期望数`再平均，正常误拒绝计0。
+- 不存在分母时JSON为null、HTML为“未定义”，绝不自动填1。
+- 均耗时涵盖失败调用；RERANK是检索+重排的总耗时，首次包含语料建库。各方法复用调用，Token不能跨方法相加。
+- Token仅累计有效重排响应报告的用量，不含Embedding与失败调用，也不是完整账单。
+
+### 两次报告比较
+
+先校验数据集/语料哈希和划分，再比较样本内容与标签，不同数据禁止比较。以每题期望与实际的对称差数判断集合改善/退步；集合错误数相同但顺序/内容变化标`CHANGED_REVIEW`，不是自动判好。成功变故障为`AVAILABILITY_REGRESSION`，两次都未完成为`BOTH_INCOMPLETE`。配置指纹不同时提醒核对改动，不能自动证明某个提示词导致变化。模型服务自身的波动也可能改变结果。
+
+教学故障注入在单元测试中构造“一个题目去掉干扰，另一个题目误删相关案例”，验证报告能同时标记IMPROVED和REGRESSION。**不是实测的新提示词A/B结论。**本篇对应源码版本为 **Tag `1120`**，获取源码后执行 `git checkout 1120` 即可切换到本文版本。
+
+
+首轮真实回归记录：`docs/evaluation-20261120/report.json` 和 `report.html`。12题均正常完成；精确集合命中依次为TF-IDF 8/12、语义5/12、混合4/12、重排12/12。9道有期望案例题，各方法首位命中均9/9，误拒绝均0/9；3道空选题，正确空选分别1/3、2/3、1/3、3/3。结果仅描述这次教学集，不能推断生产准确率。检索加重排平均4468.833ms，11次有效聊天响应报告13706 Token（不含Embedding和失败调用潜在用量）。本轮未进行提示词A/B；代码版本为Tag `1120`。
+
+本轮验证：67项Java测试、5项Node流解析测试及Maven verify中的P3C检查通过。归一化去重额外覆盖制表符和全角数字；报告来自修正这一数据校验细节前的首次真实调用，已核对所有固定样本的规范化结果一致，无需重复调用模型。
